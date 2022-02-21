@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	//	_ "github.com/niulechuan/e2e/test/e2e/createdeletevolume"
+	_ "github.com/niulechuan/e2e/test/e2e/createdeletevolume"
 	"github.com/onsi/ginkgo"
 )
 
