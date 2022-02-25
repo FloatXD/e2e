@@ -6,9 +6,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
-	restclient "k8s.io/client-go/rest"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
 // Framework supports common operations used by e2e tests; it will keep a client for you.
@@ -61,7 +61,7 @@ func NewDefaultFramework(addToSchemeFuncs ...func(s *runtime.Scheme) error) *Fra
 		ClientBurst: 50,
 	}
 	f := NewFramework(options, nil, addToSchemeFuncs...)
-	ginkgo.BeforeEach(f.defaultBeforeEach)
+	f.defaultConfig()
 	return f
 }
 
@@ -78,21 +78,20 @@ func NewFramework(options Options, client ctrlclient.Client, addToSchemeFuncs ..
 }
 
 // DefaultBeforeEach gets clientsets
-func (f *Framework) defaultBeforeEach() {
+func (f *Framework) defaultConfig() {
 	if f.client == nil {
 		ginkgo.By("Creating a kubernetes client")
-		config, err := restclient.InClusterConfig()
+		cfg, err := config.GetConfig()
 		f.ExpectNoError(err)
 
-		config.QPS = f.options.ClientQPS
-		config.Burst = f.options.ClientBurst
+		cfg.QPS = f.options.ClientQPS
+		cfg.Burst = f.options.ClientBurst
 
 		// Create the mapper provider
-		mapper, err := apiutil.NewDynamicRESTMapper(config)
+		mapper, err := apiutil.NewDynamicRESTMapper(cfg)
 		if err != nil {
 			f.ExpectNoError(err)
 		}
-
 		sche := scheme.Scheme
 		if len(f.addToSchemeFuncs) > 0 {
 			for _, fn := range f.addToSchemeFuncs {
@@ -101,8 +100,7 @@ func (f *Framework) defaultBeforeEach() {
 				}
 			}
 		}
-
-		client, err := ctrlclient.New(config, ctrlclient.Options{Scheme: sche, Mapper: mapper})
+		client, err := ctrlclient.New(cfg, ctrlclient.Options{Scheme: sche, Mapper: mapper})
 		if err != nil {
 			f.ExpectNoError(err)
 		}
