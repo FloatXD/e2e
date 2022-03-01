@@ -37,6 +37,12 @@ var _ = Describe("volume", func() {
 				Expect(localDiskNumber).ToNot(Equal(0))
 			})
 			It("Manage new disks", func() {
+				localDiskList := &ldv1.LocalDiskList{}
+				err := client.List(context.TODO(), localDiskList)
+				if err != nil {
+					f.ExpectNoError(err)
+					fmt.Printf("%+v \n", err)
+				}
 				newlocalDiskNumber := 0
 				output := runInLinux("cd /root && sh adddisk.sh")
 				fmt.Printf("wait 1 minute")
@@ -58,7 +64,7 @@ var _ = Describe("volume", func() {
 						Namespace: "kube-system",
 					},
 					Spec: ldv1.LocalDiskClaimSpec{
-						NodeName: "k8s-node1",
+						NodeName: "k8s-master",
 						Description: ldv1.DiskClaimDescription{
 							DiskType: "HDD",
 						},
