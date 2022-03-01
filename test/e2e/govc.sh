@@ -24,7 +24,7 @@ export snapshot="begin-405"
 
 for h in $hosts; do
   ##创建硬盘
-  govc vm.disk.create -vm $h -name $h/disk3 -ds="172-30-43-22-DataStore" -size 10G
+  govc vm.disk.create -vm $h -name $h/newdisk -ds="172-30-43-22-DataStore" -size 10G
   ##查看硬盘序号
   #govc device.ls -vm $h
   ##删除硬盘

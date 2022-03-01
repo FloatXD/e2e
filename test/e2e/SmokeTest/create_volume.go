@@ -1,4 +1,4 @@
-package createdeletevolume
+package SmokeTest
 
 import (
 	"context"
