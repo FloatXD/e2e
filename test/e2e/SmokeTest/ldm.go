@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"time"
 )
 
 var _ = Describe("volume", func() {
@@ -38,6 +39,8 @@ var _ = Describe("volume", func() {
 			It("Manage new disks", func() {
 				newlocalDiskNumber := 0
 				output := runInLinux("cd /root && sh adddisk.sh")
+				fmt.Printf("wait 1 minute")
+				time.Sleep(1 * time.Minute)
 				fmt.Printf("%+v \n", output)
 				for i, localDisk := range localDiskList.Items {
 					fmt.Printf("%+v \n", localDisk.Name)

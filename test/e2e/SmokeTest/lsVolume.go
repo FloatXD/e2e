@@ -21,7 +21,7 @@ var _ = Describe("volume", func() {
 
 	f := framework.NewDefaultFramework(apis.AddToScheme)
 	client := f.GetClient()
-
+	checklabels()
 	Describe("dlocal test", func() {
 		Context("create a SC", func() {
 			It("SC", func() {
