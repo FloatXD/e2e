@@ -17,17 +17,6 @@ var _ = Describe("volume", func() {
 	f := framework.NewDefaultFramework(ldapis.AddToScheme)
 	client := f.GetClient()
 
-	//LocalDisk := &ldv1.LocalDisk{}
-	//LocalDiskKey := k8sclient.ObjectKey{
-	//	Name:      "k8s-node1-sdb",
-	//	Namespace: "kube-system",
-	//}
-	//
-	//err := client.Get(context.TODO(), LocalDiskKey, LocalDisk)
-	//if err != nil {
-	//	f.ExpectNoError(err)
-	//	fmt.Printf("%+v \n", err)
-	//}
 	localDiskList := &ldv1.LocalDiskList{}
 	err := client.List(context.TODO(), localDiskList)
 	if err != nil {
@@ -36,26 +25,28 @@ var _ = Describe("volume", func() {
 	}
 
 	Describe("LDM test", func() {
-		//Context("LD test", func() {
-		//	It("Check existing LD", func() {
-		//		localDiskNumber := 0
-		//		for i, localDisk := range localDiskList.Items {
-		//			fmt.Printf("%+v \n", localDisk.Name)
-		//			localDiskNumber = i
-		//		}
-		//		fmt.Printf("There are %d local volumes", localDiskNumber)
-		//	})
-		//	It("Manage new disks", func() {
-		//		localDiskNumber := 0
-		//		output := runInLinux("cd /data && sh adddisk.sh")
-		//		fmt.Printf("%+v \n", output)
-		//		for i, localDisk := range localDiskList.Items {
-		//			fmt.Printf("%+v \n", localDisk.Name)
-		//			localDiskNumber = i
-		//		}
-		//		fmt.Printf("There are %d local volumes", localDiskNumber)
-		//	})
-		//})
+		Context("LD test", func() {
+			localDiskNumber := 0
+			It("Check existing LD", func() {
+				for i, localDisk := range localDiskList.Items {
+					fmt.Printf("%+v \n", localDisk.Name)
+					localDiskNumber = i
+				}
+				fmt.Printf("There are %d local volumes", localDiskNumber)
+				Expect(localDiskNumber).ToNot(Equal(0))
+			})
+			It("Manage new disks", func() {
+				newlocalDiskNumber := 0
+				output := runInLinux("cd /root && sh adddisk.sh")
+				fmt.Printf("%+v \n", output)
+				for i, localDisk := range localDiskList.Items {
+					fmt.Printf("%+v \n", localDisk.Name)
+					newlocalDiskNumber = i
+				}
+				fmt.Printf("There are %d local volumes", newlocalDiskNumber)
+				Expect(newlocalDiskNumber).ToNot(Equal(localDiskNumber))
+			})
+		})
 		Context("LDC test", func() {
 			It("Create new LDC", func() {
 				exmlocalDiskClaim := &ldv1.LocalDiskClaim{

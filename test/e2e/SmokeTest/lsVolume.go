@@ -21,60 +21,8 @@ var _ = Describe("volume", func() {
 
 	f := framework.NewDefaultFramework(apis.AddToScheme)
 	client := f.GetClient()
-	AfterSuite(func() {
-		//delete deploy
-		deployment := &appsv1.Deployment{}
-		deployKey := k8sclient.ObjectKey{
-			Name:      "demo-2048",
-			Namespace: "default",
-		}
-		err := client.Get(context.TODO(), deployKey, deployment)
-		if err != nil {
-			fmt.Printf("%+v \n", err)
-			f.ExpectNoError(err)
-		}
-		err = client.Delete(context.TODO(), deployment)
-		if err != nil {
-			fmt.Printf("%+v \n", err)
-			f.ExpectNoError(err)
-		}
 
-		//delete PVC
-		pvc := &apiv1.PersistentVolumeClaim{}
-		pvcKey := k8sclient.ObjectKey{
-			Name:      "pvc-demo",
-			Namespace: "default",
-		}
-		err = client.Get(context.TODO(), pvcKey, pvc)
-		if err != nil {
-			fmt.Printf("Failed to find pvc ：%+v \n", err)
-			f.ExpectNoError(err)
-		}
-		err = client.Delete(context.TODO(), pvc)
-		if err != nil {
-			fmt.Printf("Failed to delete pvc ：%+v \n", err)
-			f.ExpectNoError(err)
-		}
-
-		//delete SC
-		sc := &storagev1.StorageClass{}
-		scKey := k8sclient.ObjectKey{
-			Name: "local-storage-hdd-lvm",
-		}
-		err = client.Get(context.TODO(), scKey, sc)
-		if err != nil {
-			f.ExpectNoError(err)
-		}
-		err = client.Delete(context.TODO(), sc)
-		if err != nil {
-			f.ExpectNoError(err)
-		}
-
-		time.Sleep(1 * time.Minute)
-
-	})
-
-	Describe("ha-dlocal test", func() {
+	Describe("dlocal test", func() {
 		Context("create a SC", func() {
 			It("SC", func() {
 				//create sc
@@ -86,7 +34,7 @@ var _ = Describe("volume", func() {
 					},
 					Provisioner: "local.storage.daocloud.io",
 					Parameters: map[string]string{
-						"replicaNumber":             "2",
+						"replicaNumber":             "1",
 						"poolClass":                 "HDD",
 						"poolType":                  "REGULAR",
 						"volumeKind":                "LVM",
@@ -110,7 +58,7 @@ var _ = Describe("volume", func() {
 				storageClassName := "local-storage-hdd-lvm"
 				examplePvc := &apiv1.PersistentVolumeClaim{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "pvc-demo",
+						Name:      "pvc-lvm",
 						Namespace: "default",
 					},
 					Spec: apiv1.PersistentVolumeClaimSpec{
@@ -131,7 +79,7 @@ var _ = Describe("volume", func() {
 
 				pvc := &apiv1.PersistentVolumeClaim{}
 				pvcKey := k8sclient.ObjectKey{
-					Name:      "pvc-demo",
+					Name:      "pvc-lvm",
 					Namespace: "default",
 				}
 				err = client.Get(context.TODO(), pvcKey, pvc)
@@ -154,9 +102,6 @@ var _ = Describe("volume", func() {
 					},
 					Spec: appsv1.DeploymentSpec{
 						Replicas: int32Ptr(1),
-						Strategy: appsv1.DeploymentStrategy{
-							Type: appsv1.RecreateDeploymentStrategyType,
-						},
 						Selector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
 								"app": "demo",
@@ -170,29 +115,6 @@ var _ = Describe("volume", func() {
 							},
 							Spec: apiv1.PodSpec{
 								SchedulerName: "cherry-io-scheduler",
-								Affinity: &apiv1.Affinity{
-									NodeAffinity: &apiv1.NodeAffinity{
-										RequiredDuringSchedulingIgnoredDuringExecution: &apiv1.NodeSelector{
-											NodeSelectorTerms: []apiv1.NodeSelectorTerm{
-												{
-													[]apiv1.NodeSelectorRequirement{
-														{
-															Key:      "kubernetes.io/hostname",
-															Operator: apiv1.NodeSelectorOpIn,
-															Values: []string{
-																"k8s-node1",
-															},
-														},
-													},
-													[]apiv1.NodeSelectorRequirement{},
-												},
-											},
-										},
-										PreferredDuringSchedulingIgnoredDuringExecution: nil,
-									},
-									PodAffinity:     nil,
-									PodAntiAffinity: nil,
-								},
 								Containers: []apiv1.Container{
 									{
 										Name:  "web",
@@ -217,7 +139,7 @@ var _ = Describe("volume", func() {
 										Name: "2048-volume-lvm",
 										VolumeSource: apiv1.VolumeSource{
 											PersistentVolumeClaim: &apiv1.PersistentVolumeClaimVolumeSource{
-												ClaimName: "pvc-demo",
+												ClaimName: "pvc-lvm",
 											},
 										},
 									},
@@ -234,7 +156,7 @@ var _ = Describe("volume", func() {
 				time.Sleep(1 * time.Minute)
 				pvc := &apiv1.PersistentVolumeClaim{}
 				pvcKey := k8sclient.ObjectKey{
-					Name:      "pvc-demo",
+					Name:      "pvc-lvm",
 					Namespace: "default",
 				}
 				err = client.Get(context.TODO(), pvcKey, pvc)
@@ -276,15 +198,8 @@ var _ = Describe("volume", func() {
 				Expect(output).To(Equal(""))
 			})
 		})
-		Context("HA test", func() {
-			It("Write test file", func() {
-				output := runInLinux("kubectl get pod |grep demo-2048")
-				containerId := strings.Split(output, "   ")[0]
-				output = runInLinux("kubectl exec " + containerId + " -- sh -c \"cd /data && echo it-is-a-test >test\"")
-				output = runInLinux("kubectl exec " + containerId + " -- sh -c \"cd /data && cat test\"")
-				Expect(output).To(Equal("it-is-a-test\n"))
-			})
-			It("update deploy", func() {
+		Context("Delete test object", func() {
+			It("Delete test object", func() {
 				//delete deploy
 				deployment := &appsv1.Deployment{}
 				deployKey := k8sclient.ObjectKey{
@@ -293,42 +208,50 @@ var _ = Describe("volume", func() {
 				}
 				err := client.Get(context.TODO(), deployKey, deployment)
 				if err != nil {
+					fmt.Printf("%+v \n", err)
 					f.ExpectNoError(err)
 				}
-
-				newAffinity := []apiv1.NodeSelectorTerm{
-					{
-						[]apiv1.NodeSelectorRequirement{
-							{
-								Key:      "kubernetes.io/hostname",
-								Operator: apiv1.NodeSelectorOpIn,
-								Values: []string{
-									"k8s-master",
-								},
-							},
-						},
-						[]apiv1.NodeSelectorRequirement{},
-					},
-				}
-				deployment.Spec.Template.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms = newAffinity
-
-				err = client.Update(context.TODO(), deployment)
-				fmt.Printf("wait 1 minute")
-				time.Sleep(1 * time.Minute)
-				err = client.Get(context.TODO(), deployKey, deployment)
+				err = client.Delete(context.TODO(), deployment)
 				if err != nil {
 					fmt.Printf("%+v \n", err)
 					f.ExpectNoError(err)
 				}
-				Expect(deployment.Status.AvailableReplicas).To(Equal(int32(1)))
+
+				//delete PVC
+				pvc := &apiv1.PersistentVolumeClaim{}
+				pvcKey := k8sclient.ObjectKey{
+					Name:      "pvc-lvm",
+					Namespace: "default",
+				}
+				err = client.Get(context.TODO(), pvcKey, pvc)
+				if err != nil {
+					fmt.Printf("Failed to find pvc ：%+v \n", err)
+					f.ExpectNoError(err)
+				}
+				err = client.Delete(context.TODO(), pvc)
+				if err != nil {
+					fmt.Printf("Failed to delete pvc ：%+v \n", err)
+					f.ExpectNoError(err)
+				}
+
+				//delete SC
+				sc := &storagev1.StorageClass{}
+				scKey := k8sclient.ObjectKey{
+					Name: "local-storage-hdd-lvm",
+				}
+				err = client.Get(context.TODO(), scKey, sc)
+				if err != nil {
+					f.ExpectNoError(err)
+				}
+				err = client.Delete(context.TODO(), sc)
+				if err != nil {
+					f.ExpectNoError(err)
+				}
+
+				time.Sleep(1 * time.Minute)
+
 			})
-			It("check test file", func() {
-				//delete deploy
-				output := runInLinux("kubectl get pod |grep demo-2048")
-				containerId := strings.Split(output, "   ")[0]
-				output = runInLinux("kubectl exec " + containerId + " -- sh -c \"cd /data && cat test\"")
-				Expect(output).To(Equal("it-is-a-test\n"))
-			})
+
 		})
 	})
 })
