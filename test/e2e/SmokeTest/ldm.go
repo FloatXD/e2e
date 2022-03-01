@@ -31,9 +31,9 @@ var _ = Describe("volume", func() {
 			It("Check existing LD", func() {
 				for i, localDisk := range localDiskList.Items {
 					fmt.Printf("%+v \n", localDisk.Name)
-					localDiskNumber = i
+					localDiskNumber = i + 1
 				}
-				fmt.Printf("There are %d local volumes", localDiskNumber)
+				fmt.Printf("There are %d local volumes \n", localDiskNumber)
 				Expect(localDiskNumber).ToNot(Equal(0))
 			})
 			It("Manage new disks", func() {
@@ -44,7 +44,7 @@ var _ = Describe("volume", func() {
 				fmt.Printf("%+v \n", output)
 				for i, localDisk := range localDiskList.Items {
 					fmt.Printf("%+v \n", localDisk.Name)
-					newlocalDiskNumber = i
+					newlocalDiskNumber = i + 1
 				}
 				fmt.Printf("There are %d local volumes", newlocalDiskNumber)
 				Expect(newlocalDiskNumber).ToNot(Equal(localDiskNumber))
@@ -58,7 +58,7 @@ var _ = Describe("volume", func() {
 						Namespace: "kube-system",
 					},
 					Spec: ldv1.LocalDiskClaimSpec{
-						NodeName: " k8s-node1",
+						NodeName: "k8s-node1",
 						Description: ldv1.DiskClaimDescription{
 							DiskType: "HDD",
 						},
