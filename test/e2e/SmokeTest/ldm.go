@@ -37,16 +37,17 @@ var _ = Describe("volume", func() {
 				Expect(localDiskNumber).ToNot(Equal(0))
 			})
 			It("Manage new disks", func() {
+
+				newlocalDiskNumber := 0
+				output := runInLinux("cd /root && sh adddisk.sh")
+				fmt.Printf("wait 1 minute \n")
+				time.Sleep(2 * time.Minute)
 				localDiskList := &ldv1.LocalDiskList{}
 				err := client.List(context.TODO(), localDiskList)
 				if err != nil {
 					f.ExpectNoError(err)
 					fmt.Printf("%+v \n", err)
 				}
-				newlocalDiskNumber := 0
-				output := runInLinux("cd /root && sh adddisk.sh")
-				fmt.Printf("wait 1 minute")
-				time.Sleep(1 * time.Minute)
 				fmt.Printf("%+v \n", output)
 				for i, localDisk := range localDiskList.Items {
 					fmt.Printf("%+v \n", localDisk.Name)
@@ -75,6 +76,7 @@ var _ = Describe("volume", func() {
 					fmt.Printf("Create LDC failed ：%+v \n", err)
 					f.ExpectNoError(err)
 				}
+				time.Sleep(1 * time.Minute)
 				localDiskClaim := &ldv1.LocalDiskClaim{}
 				localDiskClaimKey := k8sclient.ObjectKey{
 					Name:      "localdiskclaim-node-1",
@@ -85,6 +87,8 @@ var _ = Describe("volume", func() {
 					fmt.Printf("%+v \n", err)
 					f.ExpectNoError(err)
 				}
+
+				fmt.Printf("%+v", localDiskClaim)
 				Expect(localDiskClaim.Status.Status).To(Equal(ldv1.LocalDiskClaimStatusBound))
 			})
 		})
