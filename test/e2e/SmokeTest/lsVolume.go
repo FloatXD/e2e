@@ -21,7 +21,8 @@ var _ = Describe("volume", func() {
 
 	f := framework.NewDefaultFramework(apis.AddToScheme)
 	client := f.GetClient()
-
+	installHelm()
+	addLabels()
 	Describe("dlocal test", func() {
 		Context("create a SC", func() {
 			It("SC", func() {
@@ -247,7 +248,7 @@ var _ = Describe("volume", func() {
 				if err != nil {
 					f.ExpectNoError(err)
 				}
-
+				uninstallHelm()
 				time.Sleep(1 * time.Minute)
 
 			})

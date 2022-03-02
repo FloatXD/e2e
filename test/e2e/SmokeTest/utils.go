@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	ldapis "github.com/hwameistor/local-disk-manager/pkg/apis"
+	ldv1 "github.com/hwameistor/local-disk-manager/pkg/apis/hwameistor/v1alpha1"
 	_ "github.com/niulechuan/e2e/pkg/apis"
 	"github.com/niulechuan/e2e/test/e2e/framework"
 	apiv1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os/exec"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
@@ -71,7 +73,39 @@ func addLabels() {
 	}
 }
 
+func installHelm() {
+	_ = runInLinux("cd /root/helm-charts-hwameistor-0.2.3/charts && helm install hwameistor -n hwameistor --create-namespace --generate-name")
+}
 func uninstallHelm() {
-	_ = runInLinux("helm list -A | grep 'hwameistor' | awk '{print $1}' | xargs helm uninstall -n hwameistor")
 	_ = runInLinux("kubectl get crd | grep 'hwameistor' | awk '{print $1}' | xargs -n1 kubectl delete crd")
+	_ = runInLinux("helm list -A | grep 'hwameistor' | awk '{print $1}' | xargs helm uninstall -n hwameistor")
+
+}
+
+func createLdc() {
+	nodelist := nodeList()
+	for _, nodes := range nodelist.Items {
+		f := framework.NewDefaultFramework(ldapis.AddToScheme)
+		client := f.GetClient()
+		exmlocalDiskClaim := &ldv1.LocalDiskClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "localdiskclaim-" + nodes.Name,
+				Namespace: "kube-system",
+			},
+			Spec: ldv1.LocalDiskClaimSpec{
+				NodeName: nodes.Name,
+				Description: ldv1.DiskClaimDescription{
+					DiskType: "HDD",
+				},
+			},
+		}
+		err := client.Create(context.TODO(), exmlocalDiskClaim)
+		if err != nil {
+			fmt.Printf("Create LDC failed ：%+v \n", err)
+			f.ExpectNoError(err)
+		}
+	}
+	fmt.Printf("wait 1 minutes for create ldc\n")
+	time.Sleep(1 * time.Minute)
+
 }
