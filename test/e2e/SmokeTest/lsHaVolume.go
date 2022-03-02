@@ -54,7 +54,7 @@ var _ = Describe("volume", func() {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "local-storage-hdd-lvm-ha",
 					},
-					Provisioner: "local.storage.daocloud.io",
+					Provisioner: "local.storage.hwameistor.io",
 					Parameters: map[string]string{
 						"replicaNumber":             "2",
 						"poolClass":                 "HDD",
@@ -139,7 +139,7 @@ var _ = Describe("volume", func() {
 								},
 							},
 							Spec: apiv1.PodSpec{
-								SchedulerName: "cherry-io-scheduler",
+								SchedulerName: "hwameistor-scheduler",
 								Affinity: &apiv1.Affinity{
 									NodeAffinity: &apiv1.NodeAffinity{
 										RequiredDuringSchedulingIgnoredDuringExecution: &apiv1.NodeSelector{
@@ -259,7 +259,7 @@ var _ = Describe("volume", func() {
 				//delete deploy
 				deployment := &appsv1.Deployment{}
 				deployKey := k8sclient.ObjectKey{
-					Name:      "demo-2048",
+					Name:      "demo-2048-ha",
 					Namespace: "default",
 				}
 				err := client.Get(context.TODO(), deployKey, deployment)

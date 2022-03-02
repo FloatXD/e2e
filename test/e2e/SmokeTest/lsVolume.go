@@ -32,7 +32,7 @@ var _ = Describe("volume", func() {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "local-storage-hdd-lvm",
 					},
-					Provisioner: "local.storage.daocloud.io",
+					Provisioner: "local.storage.hwameistor.io",
 					Parameters: map[string]string{
 						"replicaNumber":             "1",
 						"poolClass":                 "HDD",
@@ -114,7 +114,7 @@ var _ = Describe("volume", func() {
 								},
 							},
 							Spec: apiv1.PodSpec{
-								SchedulerName: "cherry-io-scheduler",
+								SchedulerName: "hwameistor-scheduler",
 								Containers: []apiv1.Container{
 									{
 										Name:  "web",

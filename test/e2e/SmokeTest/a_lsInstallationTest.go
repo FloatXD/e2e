@@ -9,44 +9,13 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
-	apiv1 "k8s.io/api/core/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"time"
 )
 
 var _ = Describe("volume", func() {
 	f := framework.NewDefaultFramework(ldapis.AddToScheme)
 	client := f.GetClient()
-	nodelist := &apiv1.NodeList{}
-	err := client.List(context.TODO(), nodelist)
-	if err != nil {
-		f.ExpectNoError(err)
-		fmt.Printf("%+v \n", err)
-	}
-	for _, nodes := range nodelist.Items {
-		node := &apiv1.Node{}
-		nodeKey := k8sclient.ObjectKey{
-			Name: nodes.Name,
-		}
-		err := client.Get(context.TODO(), nodeKey, node)
-		if err != nil {
-			fmt.Printf("%+v \n", err)
-			f.ExpectNoError(err)
-		}
-		_, boolLabel := node.Labels["csi.driver.uds.dce.daocloud.io/local.storage.daocloud.io"]
-		if !boolLabel {
-			node.Labels["localstorage.hwameistor.io/local-storage"] = "true"
-			node.Labels["localstorage.hwameistor.io/local-storage-topology-node"] = nodes.Name
-			fmt.Printf("adding labels \n")
-			err := client.Update(context.TODO(), node)
-			if err != nil {
-				fmt.Printf("%+v \n", err)
-				f.ExpectNoError(err)
-			}
-			fmt.Printf("wait 1 minute\n")
-			time.Sleep(1 * time.Minute)
-		}
-	}
+	addLabels()
 	Describe("Ls test", func() {
 		Context("check hwameistor", func() {
 			It("check status", func() {
