@@ -44,7 +44,6 @@ var _ = Describe("volume", func() {
 	//	Name(podName).
 	//	Namespace(namespace).SubResource("exec").Param("container", containerName)
 
-	checklabels()
 	Describe("ha-dlocal test", func() {
 		Context("create a HA-SC", func() {
 			It("SC", func() {

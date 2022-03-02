@@ -40,7 +40,7 @@ var _ = Describe("volume", func() {
 
 				newlocalDiskNumber := 0
 				output := runInLinux("cd /root && sh adddisk.sh")
-				fmt.Printf("wait 1 minute \n")
+				fmt.Printf("wait 2 minutes \n")
 				time.Sleep(2 * time.Minute)
 				localDiskList := &ldv1.LocalDiskList{}
 				err := client.List(context.TODO(), localDiskList)
@@ -55,41 +55,47 @@ var _ = Describe("volume", func() {
 				}
 				fmt.Printf("There are %d local volumes", newlocalDiskNumber)
 				Expect(newlocalDiskNumber).ToNot(Equal(localDiskNumber))
+				output = runInLinux("cd /root && sh deletedisk.sh")
 			})
 		})
 		Context("LDC test", func() {
 			It("Create new LDC", func() {
-				exmlocalDiskClaim := &ldv1.LocalDiskClaim{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "localdiskclaim-node-1",
-						Namespace: "kube-system",
-					},
-					Spec: ldv1.LocalDiskClaimSpec{
-						NodeName: "k8s-master",
-						Description: ldv1.DiskClaimDescription{
-							DiskType: "HDD",
+				nodelist := nodeList()
+				for _, nodes := range nodelist.Items {
+					exmlocalDiskClaim := &ldv1.LocalDiskClaim{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "localdiskclaim-" + nodes.Name,
+							Namespace: "kube-system",
 						},
-					},
-				}
-				err := client.Create(context.TODO(), exmlocalDiskClaim)
-				if err != nil {
-					fmt.Printf("Create LDC failed ：%+v \n", err)
-					f.ExpectNoError(err)
-				}
-				time.Sleep(1 * time.Minute)
-				localDiskClaim := &ldv1.LocalDiskClaim{}
-				localDiskClaimKey := k8sclient.ObjectKey{
-					Name:      "localdiskclaim-node-1",
-					Namespace: "kube-system",
-				}
-				err = client.Get(context.TODO(), localDiskClaimKey, localDiskClaim)
-				if err != nil {
-					fmt.Printf("%+v \n", err)
-					f.ExpectNoError(err)
+						Spec: ldv1.LocalDiskClaimSpec{
+							NodeName: nodes.Name,
+							Description: ldv1.DiskClaimDescription{
+								DiskType: "HDD",
+							},
+						},
+					}
+					err := client.Create(context.TODO(), exmlocalDiskClaim)
+					if err != nil {
+						fmt.Printf("Create LDC failed ：%+v \n", err)
+						f.ExpectNoError(err)
+					}
 				}
 
-				fmt.Printf("%+v", localDiskClaim)
-				Expect(localDiskClaim.Status.Status).To(Equal(ldv1.LocalDiskClaimStatusBound))
+				time.Sleep(1 * time.Minute)
+				for _, nodes := range nodelist.Items {
+					localDiskClaim := &ldv1.LocalDiskClaim{}
+					localDiskClaimKey := k8sclient.ObjectKey{
+						Name:      "localdiskclaim-" + nodes.Name,
+						Namespace: "kube-system",
+					}
+					err = client.Get(context.TODO(), localDiskClaimKey, localDiskClaim)
+					if err != nil {
+						fmt.Printf("%+v \n", err)
+						f.ExpectNoError(err)
+					}
+
+					Expect(localDiskClaim.Status.Status).To(Equal(ldv1.LocalDiskClaimStatusBound))
+				}
 			})
 		})
 
