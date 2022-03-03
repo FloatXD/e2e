@@ -299,39 +299,14 @@ var _ = Describe("volume", func() {
 					f.ExpectNoError(err)
 				}
 
-				//delete PVC
-				pvc := &apiv1.PersistentVolumeClaim{}
-				pvcKey := k8sclient.ObjectKey{
-					Name:      "pvc-lvm-ha",
-					Namespace: "default",
-				}
-				err = client.Get(context.TODO(), pvcKey, pvc)
-				if err != nil {
-					fmt.Printf("Failed to find pvc ：%+v \n", err)
-					f.ExpectNoError(err)
-				}
-				err = client.Delete(context.TODO(), pvc)
-				if err != nil {
-					fmt.Printf("Failed to delete pvc ：%+v \n", err)
-					f.ExpectNoError(err)
-				}
-
-				//delete SC
-				sc := &storagev1.StorageClass{}
-				scKey := k8sclient.ObjectKey{
-					Name: "local-storage-hdd-lvm-ha",
-				}
-				err = client.Get(context.TODO(), scKey, sc)
-				if err != nil {
-					f.ExpectNoError(err)
-				}
-				err = client.Delete(context.TODO(), sc)
-				if err != nil {
-					f.ExpectNoError(err)
-				}
-				uninstallHelm()
-				time.Sleep(1 * time.Minute)
-
+			})
+			It("delete all pvc ", func() {
+				r := deleteAllPVC()
+				Expect(r).To(Equal(true))
+			})
+			It("delete all sc", func() {
+				r := deleteAllSC()
+				Expect(r).To(Equal(true))
 			})
 
 		})
