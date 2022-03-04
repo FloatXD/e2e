@@ -19,11 +19,15 @@ import (
 
 var _ = Describe("volume", func() {
 
-	f := framework.NewDefaultFramework(apis.AddToScheme)
-	client := f.GetClient()
-	installHelm()
-	addLabels()
 	Describe("dlocal test", func() {
+		f := framework.NewDefaultFramework(apis.AddToScheme)
+		client := f.GetClient()
+
+		It("get ready", func() {
+			installHelm()
+			createLdc()
+			addLabels()
+		})
 		Context("create a SC", func() {
 			It("SC", func() {
 				//create sc
@@ -33,7 +37,7 @@ var _ = Describe("volume", func() {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "local-storage-hdd-lvm",
 					},
-					Provisioner: "local.storage.hwameistor.io",
+					Provisioner: "localstorage.hwameistor.io",
 					Parameters: map[string]string{
 						"replicaNumber":             "1",
 						"poolClass":                 "HDD",
@@ -227,7 +231,10 @@ var _ = Describe("volume", func() {
 				r := deleteAllSC()
 				Expect(r).To(Equal(true))
 			})
+			It("delete helm", func() {
+				uninstallHelm()
 
+			})
 		})
 	})
 })

@@ -9,8 +9,8 @@ export GOVC_USERNAME="panyintian.fu@daocloud.io"
 export GOVC_PASSWORD="aer]ei4ohKaxeik"
 export GOVC_URL="https://192.168.1.136:443"
 export GOVC_DATACENTER="DaoCloud-NDX-Fusion"
-export GOVC_RESOURCE_POOL="k8s"
-export hosts="fupan-k8s-master"
+export GOVC_RESOURCE_POOL="e2e"
+export hosts="fupan-e2e-k8s-node1"
 export snapshot="begin-405"
 # for h in hosts; do govc vm.power -off -force $h; done
 # for h in hosts; do govc snapshot.revert -vm $h "机器配置2"; done

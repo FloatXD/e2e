@@ -60,9 +60,10 @@ func addLabels() {
 			fmt.Printf("%+v \n", err)
 			f.ExpectNoError(err)
 		}
-		_, boolLabel := node.Labels["csi.driver.uds.dce.daocloud.io/local.storage.daocloud.io"]
+		_, boolLabel := node.Labels["localstorage.hwameistor.io/local-storage"]
 		if !boolLabel {
 			node.Labels["localstorage.hwameistor.io/local-storage"] = "true"
+			node.Labels["csi.driver.hwameistor.io/localstorage"] = "true"
 			node.Labels["localstorage.hwameistor.io/local-storage-topology-node"] = nodes.Name
 			fmt.Printf("adding labels \n")
 			err := client.Update(context.TODO(), node)
@@ -79,17 +80,21 @@ func addLabels() {
 func installHelm() {
 	fmt.Printf("helm install hwameistor\n")
 	_ = runInLinux("cd /root/helm-charts-hwameistor-0.2.3/charts && helm install hwameistor -n hwameistor --create-namespace --generate-name")
+	fmt.Printf("waiting for intall hwameistor\n")
+	time.Sleep(1 * time.Minute)
 }
 func uninstallHelm() {
 	fmt.Printf("helm uninstall hwameistor\n")
 	_ = runInLinux("helm list -A | grep 'hwameistor' | awk '{print $1}' | xargs helm uninstall -n hwameistor")
 	fmt.Printf("clean all hwameistor crd\n")
 	_ = runInLinux("kubectl get crd | grep 'hwameistor' | awk '{print $1}' | xargs -n1 kubectl delete crd")
+	fmt.Printf("waiting for uninstall hwameistor\n")
+	time.Sleep(1 * time.Minute)
 
 }
 
 func createLdc() {
-	fmt.Printf("create ldc for each node")
+	fmt.Printf("create ldc for each node\n")
 	nodelist := nodeList()
 	for _, nodes := range nodelist.Items {
 		f := framework.NewDefaultFramework(ldapis.AddToScheme)

@@ -17,6 +17,10 @@ var _ = Describe("volume", func() {
 	client := f.GetClient()
 	addLabels()
 	Describe("Ls test", func() {
+		It("get ready", func() {
+			installHelm()
+			addLabels()
+		})
 		Context("check hwameistor", func() {
 			It("check status", func() {
 				daemonset := &appsv1.DaemonSet{}
@@ -33,8 +37,7 @@ var _ = Describe("volume", func() {
 				Expect(daemonset.Status.DesiredNumberScheduled).To(Equal(daemonset.Status.NumberAvailable))
 			})
 		})
-
-		Context("check hwameistor", func() {
+		Context("check hwameistor-csi-controller", func() {
 			It("check status", func() {
 				deployment := &appsv1.Deployment{}
 				deploymentKey := k8sclient.ObjectKey{
@@ -50,7 +53,7 @@ var _ = Describe("volume", func() {
 				Expect(deployment.Status.AvailableReplicas).To(Equal(int32(1)))
 			})
 		})
-		Context("check hwameistor", func() {
+		Context("check hwameistor-scheduler", func() {
 			It("check status", func() {
 				deployment := &appsv1.Deployment{}
 				deploymentKey := k8sclient.ObjectKey{
@@ -65,6 +68,26 @@ var _ = Describe("volume", func() {
 				}
 				Expect(deployment.Status.AvailableReplicas).To(Equal(int32(1)))
 			})
+		})
+		Context("delete labels", func() {
+			It("check status", func() {
+				deployment := &appsv1.Deployment{}
+				deploymentKey := k8sclient.ObjectKey{
+					Name:      "hwameistor-scheduler",
+					Namespace: "hwameistor",
+				}
+
+				err := client.Get(context.TODO(), deploymentKey, deployment)
+				if err != nil {
+					f.ExpectNoError(err)
+					fmt.Printf("%+v \n", err)
+				}
+				Expect(deployment.Status.AvailableReplicas).To(Equal(int32(1)))
+			})
+		})
+		It("delete helm", func() {
+			uninstallHelm()
+
 		})
 	})
 })

@@ -18,13 +18,16 @@ import (
 )
 
 var _ = Describe("volume", func() {
-
 	f := framework.NewDefaultFramework(apis.AddToScheme)
 	client := f.GetClient()
-	installHelm()
-	addLabels()
 	Describe("ha-dlocal test", func() {
+
 		Context("create a HA-SC", func() {
+			It("get ready", func() {
+				installHelm()
+				createLdc()
+				addLabels()
+			})
 			It("SC", func() {
 				//create sc
 				deleteObj := apiv1.PersistentVolumeReclaimDelete
@@ -33,7 +36,7 @@ var _ = Describe("volume", func() {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "local-storage-hdd-lvm-ha",
 					},
-					Provisioner: "local.storage.hwameistor.io",
+					Provisioner: "localstorage.hwameistor.io",
 					Parameters: map[string]string{
 						"replicaNumber":             "2",
 						"poolClass":                 "HDD",
@@ -211,14 +214,14 @@ var _ = Describe("volume", func() {
 		Context("Using volumes", func() {
 			It("Write", func() {
 				//create a request
-				output := runInLinux("kubectl get pod |grep demo-2048")
+				output := runInLinux("kubectl get pod |grep demo-2048-ha")
 				containerId := strings.Split(output, "   ")[0]
 				output = runInLinux("kubectl exec " + containerId + " -- sh -c \"cd /data && echo it-is-a-test >test\"")
 				output = runInLinux("kubectl exec " + containerId + " -- sh -c \"cd /data && cat test\"")
 				Expect(output).To(Equal("it-is-a-test\n"))
 			})
 			It("Delete", func() {
-				output := runInLinux("kubectl get pod |grep demo-2048")
+				output := runInLinux("kubectl get pod |grep demo-2048-ha")
 				containerId := strings.Split(output, "   ")[0]
 				output = runInLinux("kubectl exec " + containerId + " -- sh -c \"cd /data && rm -rf test\"")
 				output = runInLinux("kubectl exec " + containerId + " -- sh -c \"cd /data && ls \"")
@@ -253,7 +256,7 @@ var _ = Describe("volume", func() {
 								Key:      "kubernetes.io/hostname",
 								Operator: apiv1.NodeSelectorOpIn,
 								Values: []string{
-									"k8s-master",
+									"k8s-node2",
 								},
 							},
 						},
@@ -307,6 +310,10 @@ var _ = Describe("volume", func() {
 			It("delete all sc", func() {
 				r := deleteAllSC()
 				Expect(r).To(Equal(true))
+			})
+			It("delete helm", func() {
+				uninstallHelm()
+
 			})
 
 		})

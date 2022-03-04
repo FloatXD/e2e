@@ -15,22 +15,30 @@ import (
 var _ = Describe("volume", func() {
 	f := framework.NewDefaultFramework(ldapis.AddToScheme)
 	client := f.GetClient()
-	daemonset := &appsv1.DaemonSet{}
-	daemonsetKey := k8sclient.ObjectKey{
-		Name:      "local-disk-manager",
-		Namespace: "hwameistor",
-	}
 
-	err := client.Get(context.TODO(), daemonsetKey, daemonset)
-	if err != nil {
-		f.ExpectNoError(err)
-		fmt.Printf("%+v \n", err)
-	}
 	Describe("LDM test", func() {
+		It("get ready", func() {
+			installHelm()
+		})
 		Context("check local-disk-manager", func() {
 			It("check status", func() {
+				daemonset := &appsv1.DaemonSet{}
+				daemonsetKey := k8sclient.ObjectKey{
+					Name:      "local-disk-manager",
+					Namespace: "hwameistor",
+				}
+
+				err := client.Get(context.TODO(), daemonsetKey, daemonset)
+				if err != nil {
+					f.ExpectNoError(err)
+					fmt.Printf("%+v \n", err)
+				}
 				Expect(daemonset.Status.DesiredNumberScheduled).To(Equal(daemonset.Status.NumberAvailable))
 			})
+		})
+		It("delete helm", func() {
+			uninstallHelm()
+
 		})
 	})
 })
