@@ -3,7 +3,8 @@ package SmokeTest
 import (
 	"context"
 	"fmt"
-	"github.com/niulechuan/e2e/pkg/apis"
+	lsapi "github.com/hwameistor/local-storage/pkg/apis/client/clientset/versioned/scheme"
+	lsv1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
 	"github.com/niulechuan/e2e/test/e2e/framework"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -17,8 +18,10 @@ import (
 	"time"
 )
 
+// github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1/
 var _ = Describe("volume", func() {
-	f := framework.NewDefaultFramework(apis.AddToScheme)
+
+	f := framework.NewDefaultFramework(lsapi.AddToScheme)
 	client := f.GetClient()
 	Describe("ha-dlocal test", func() {
 
@@ -92,6 +95,37 @@ var _ = Describe("volume", func() {
 					f.ExpectNoError(err)
 				}
 				Expect(pvc.Status.Phase).To(Equal(apiv1.ClaimPending))
+			})
+			It("create a localvolumemigrate", func() {
+
+				pvc := &apiv1.PersistentVolumeClaim{}
+				pvcKey := k8sclient.ObjectKey{
+					Name:      "pvc-lvm-ha",
+					Namespace: "default",
+				}
+				err := client.Get(context.TODO(), pvcKey, pvc)
+				if err != nil {
+					fmt.Printf("Failed to find pvc ：%+v \n", err)
+					f.ExpectNoError(err)
+				}
+				exlvmi := &lsv1.LocalVolumeMigrate{
+					TypeMeta: metav1.TypeMeta{},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "localvolumemigrate-1",
+					},
+					Spec: lsv1.LocalVolumeMigrateSpec{
+						NodeName:   "k8s-master",
+						VolumeName: pvc.Spec.VolumeName,
+					},
+					Status: lsv1.LocalVolumeMigrateStatus{},
+				}
+				err = client.Create(context.TODO(), exlvmi)
+				if err != nil {
+					fmt.Printf("Create lvmi failed ：%+v \n", err)
+					f.ExpectNoError(err)
+				}
+				fmt.Printf("wait 2 minutes for lvr")
+				time.Sleep(2 * time.Minute)
 			})
 
 		})
