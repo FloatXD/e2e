@@ -8,23 +8,23 @@ import (
 
 	_ "github.com/niulechuan/e2e/pkg/apis"
 	"github.com/niulechuan/e2e/test/e2e/framework"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/onsi/ginkgo"
+	"github.com/onsi/gomega"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
 )
 
-var _ = Describe("volume", func() {
+var _ = ginkgo.Describe("volume", func() {
 	f := framework.NewDefaultFramework(ldapis.AddToScheme)
 	client := f.GetClient()
-	Describe("LDM test", func() {
+	ginkgo.Describe("LDM test", func() {
 
-		Context("LD test", func() {
+		ginkgo.Context("LD test", func() {
 			localDiskNumber := 0
-			It("get ready", func() {
+			ginkgo.It("get ready", func() {
 				installHelm()
 			})
-			It("Check existing LD", func() {
+			ginkgo.It("Check existing LD", func() {
 				localDiskList := &ldv1.LocalDiskList{}
 				err := client.List(context.TODO(), localDiskList)
 				if err != nil {
@@ -37,9 +37,9 @@ var _ = Describe("volume", func() {
 					localDiskNumber = i + 1
 				}
 				fmt.Printf("There are %d local volumes \n", localDiskNumber)
-				Expect(localDiskNumber).ToNot(Equal(0))
+				gomega.Expect(localDiskNumber).ToNot(gomega.Equal(0))
 			})
-			It("Manage new disks", func() {
+			ginkgo.It("Manage new disks", func() {
 				newlocalDiskNumber := 0
 				output := runInLinux("cd /root && sh adddisk.sh")
 				fmt.Printf("wait 2 minutes \n")
@@ -58,12 +58,12 @@ var _ = Describe("volume", func() {
 				fmt.Printf("There are %d local volumes \n", newlocalDiskNumber)
 
 				output = runInLinux("cd /root && sh deletedisk.sh")
-				Expect(newlocalDiskNumber).ToNot(Equal(localDiskNumber))
+				gomega.Expect(newlocalDiskNumber).ToNot(gomega.Equal(localDiskNumber))
 
 			})
 		})
-		Context("LDC test", func() {
-			It("Create new LDC", func() {
+		ginkgo.Context("LDC test", func() {
+			ginkgo.It("Create new LDC", func() {
 				nodelist := nodeList()
 				createLdc()
 				for _, nodes := range nodelist.Items {
@@ -78,12 +78,12 @@ var _ = Describe("volume", func() {
 						f.ExpectNoError(err)
 					}
 
-					Expect(localDiskClaim.Status.Status).To(Equal(ldv1.LocalDiskClaimStatusBound))
+					gomega.Expect(localDiskClaim.Status.Status).To(gomega.Equal(ldv1.LocalDiskClaimStatusBound))
 				}
 			})
 		})
-		Context("Clean up the environment", func() {
-			It("Clean helm & crd", func() {
+		ginkgo.Context("Clean up the environment", func() {
+			ginkgo.It("Clean helm & crd", func() {
 				uninstallHelm()
 			})
 		})

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"github.com/niulechuan/e2e/pkg/apis"
 	"github.com/niulechuan/e2e/test/e2e/framework"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/onsi/ginkgo"
+	"github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
@@ -17,19 +17,19 @@ import (
 	"time"
 )
 
-var _ = Describe("volume", func() {
+var _ = ginkgo.Describe("volume", func() {
 
-	Describe("dlocal test", func() {
+	ginkgo.Describe("dlocal test", func() {
 		f := framework.NewDefaultFramework(apis.AddToScheme)
 		client := f.GetClient()
 
-		It("get ready", func() {
+		ginkgo.It("get ready", func() {
 			installHelm()
 			createLdc()
 			addLabels()
 		})
-		Context("create a SC", func() {
-			It("SC", func() {
+		ginkgo.Context("create a SC", func() {
+			ginkgo.It("SC", func() {
 				//create sc
 				deleteObj := apiv1.PersistentVolumeReclaimDelete
 				waitForFirstConsumerObj := storagev1.VolumeBindingWaitForFirstConsumer
@@ -57,8 +57,8 @@ var _ = Describe("volume", func() {
 				}
 			})
 		})
-		Context("create a PVC", func() {
-			It("PVC STATUS should be Pending", func() {
+		ginkgo.Context("create a PVC", func() {
+			ginkgo.It("PVC STATUS should be Pending", func() {
 				//create PVC
 				storageClassName := "local-storage-hdd-lvm"
 				examplePvc := &apiv1.PersistentVolumeClaim{
@@ -92,13 +92,13 @@ var _ = Describe("volume", func() {
 					fmt.Printf("Failed to find pvc ：%+v \n", err)
 					f.ExpectNoError(err)
 				}
-				Expect(pvc.Status.Phase).To(Equal(apiv1.ClaimPending))
+				gomega.Expect(pvc.Status.Phase).To(gomega.Equal(apiv1.ClaimPending))
 			})
 
 		})
-		Context("create a deployment", func() {
+		ginkgo.Context("create a deployment", func() {
 
-			It("PVC STATUS should be Bound", func() {
+			ginkgo.It("PVC STATUS should be Bound", func() {
 				//create deployment
 				exampleDeployment := &appsv1.Deployment{
 					ObjectMeta: metav1.ObjectMeta{
@@ -169,9 +169,9 @@ var _ = Describe("volume", func() {
 					fmt.Printf("%+v \n", err)
 					f.ExpectNoError(err)
 				}
-				Expect(pvc.Status.Phase).To(Equal(apiv1.ClaimBound))
+				gomega.Expect(pvc.Status.Phase).To(gomega.Equal(apiv1.ClaimBound))
 			})
-			It("deploy STATUS should be AVAILABLE", func() {
+			ginkgo.It("deploy STATUS should be AVAILABLE", func() {
 				deployment := &appsv1.Deployment{}
 				deployKey := k8sclient.ObjectKey{
 					Name:      "demo-2048",
@@ -182,29 +182,29 @@ var _ = Describe("volume", func() {
 					fmt.Printf("%+v \n", err)
 					f.ExpectNoError(err)
 				}
-				Expect(deployment.Status.AvailableReplicas).To(Equal(int32(1)))
+				gomega.Expect(deployment.Status.AvailableReplicas).To(gomega.Equal(int32(1)))
 			})
 
 		})
-		Context("Using volumes", func() {
-			It("Write", func() {
+		ginkgo.Context("Using volumes", func() {
+			ginkgo.It("Write", func() {
 				//create a request
 				output := runInLinux("kubectl get pod |grep demo-2048")
 				containerId := strings.Split(output, "   ")[0]
 				output = runInLinux("kubectl exec " + containerId + " -- sh -c \"cd /data && echo it-is-a-test >test\"")
 				output = runInLinux("kubectl exec " + containerId + " -- sh -c \"cd /data && cat test\"")
-				Expect(output).To(Equal("it-is-a-test\n"))
+				gomega.Expect(output).To(gomega.Equal("it-is-a-test\n"))
 			})
-			It("Delete", func() {
+			ginkgo.It("Delete", func() {
 				output := runInLinux("kubectl get pod |grep demo-2048")
 				containerId := strings.Split(output, "   ")[0]
 				output = runInLinux("kubectl exec " + containerId + " -- sh -c \"cd /data && rm -rf test\"")
 				output = runInLinux("kubectl exec " + containerId + " -- sh -c \"cd /data && ls \"")
-				Expect(output).To(Equal(""))
+				gomega.Expect(output).To(gomega.Equal(""))
 			})
 		})
-		Context("Delete test object", func() {
-			It("Delete test object", func() {
+		ginkgo.Context("Delete test object", func() {
+			ginkgo.It("Delete test object", func() {
 				//delete deploy
 				deployment := &appsv1.Deployment{}
 				deployKey := k8sclient.ObjectKey{
@@ -223,15 +223,15 @@ var _ = Describe("volume", func() {
 				}
 
 			})
-			It("delete all pvc ", func() {
+			ginkgo.It("delete all pvc ", func() {
 				r := deleteAllPVC()
-				Expect(r).To(Equal(true))
+				gomega.Expect(r).To(gomega.Equal(true))
 			})
-			It("delete all sc", func() {
+			ginkgo.It("delete all sc", func() {
 				r := deleteAllSC()
-				Expect(r).To(Equal(true))
+				gomega.Expect(r).To(gomega.Equal(true))
 			})
-			It("delete helm", func() {
+			ginkgo.It("delete helm", func() {
 				uninstallHelm()
 
 			})

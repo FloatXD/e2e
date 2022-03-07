@@ -6,23 +6,23 @@ import (
 	ldapis "github.com/hwameistor/local-disk-manager/pkg/apis"
 	_ "github.com/niulechuan/e2e/pkg/apis"
 	"github.com/niulechuan/e2e/test/e2e/framework"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/onsi/ginkgo"
+	"github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var _ = Describe("volume", func() {
+var _ = ginkgo.Describe("volume", func() {
 	f := framework.NewDefaultFramework(ldapis.AddToScheme)
 	client := f.GetClient()
 
-	Describe("Ls test", func() {
-		It("get ready", func() {
+	ginkgo.Describe("Ls test", func() {
+		ginkgo.It("get ready", func() {
 			installHelm()
 			addLabels()
 		})
-		Context("check hwameistor", func() {
-			It("check status", func() {
+		ginkgo.Context("check hwameistor", func() {
+			ginkgo.It("check status", func() {
 				daemonset := &appsv1.DaemonSet{}
 				daemonsetKey := k8sclient.ObjectKey{
 					Name:      "hwameistor",
@@ -34,11 +34,11 @@ var _ = Describe("volume", func() {
 					f.ExpectNoError(err)
 
 				}
-				Expect(daemonset.Status.DesiredNumberScheduled).To(Equal(daemonset.Status.NumberAvailable))
+				gomega.Expect(daemonset.Status.DesiredNumberScheduled).To(gomega.Equal(daemonset.Status.NumberAvailable))
 			})
 		})
-		Context("check hwameistor-csi-controller", func() {
-			It("check status", func() {
+		ginkgo.Context("check hwameistor-csi-controller", func() {
+			ginkgo.It("check status", func() {
 				deployment := &appsv1.Deployment{}
 				deploymentKey := k8sclient.ObjectKey{
 					Name:      "hwameistor-csi-controller",
@@ -50,11 +50,11 @@ var _ = Describe("volume", func() {
 					f.ExpectNoError(err)
 					fmt.Printf("%+v \n", err)
 				}
-				Expect(deployment.Status.AvailableReplicas).To(Equal(int32(1)))
+				gomega.Expect(deployment.Status.AvailableReplicas).To(gomega.Equal(int32(1)))
 			})
 		})
-		Context("check hwameistor-scheduler", func() {
-			It("check status", func() {
+		ginkgo.Context("check hwameistor-scheduler", func() {
+			ginkgo.It("check status", func() {
 				deployment := &appsv1.Deployment{}
 				deploymentKey := k8sclient.ObjectKey{
 					Name:      "hwameistor-scheduler",
@@ -66,10 +66,10 @@ var _ = Describe("volume", func() {
 					f.ExpectNoError(err)
 					fmt.Printf("%+v \n", err)
 				}
-				Expect(deployment.Status.AvailableReplicas).To(Equal(int32(1)))
+				gomega.Expect(deployment.Status.AvailableReplicas).To(gomega.Equal(int32(1)))
 			})
 		})
-		It("delete helm", func() {
+		ginkgo.It("delete helm", func() {
 			uninstallHelm()
 
 		})

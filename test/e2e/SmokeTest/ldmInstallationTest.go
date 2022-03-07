@@ -6,22 +6,22 @@ import (
 	ldapis "github.com/hwameistor/local-disk-manager/pkg/apis"
 	_ "github.com/niulechuan/e2e/pkg/apis"
 	"github.com/niulechuan/e2e/test/e2e/framework"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/onsi/ginkgo"
+	"github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var _ = Describe("volume", func() {
+var _ = ginkgo.Describe("volume", func() {
 	f := framework.NewDefaultFramework(ldapis.AddToScheme)
 	client := f.GetClient()
 
-	Describe("LDM test", func() {
-		It("get ready", func() {
+	ginkgo.Describe("LDM test", func() {
+		ginkgo.It("get ready", func() {
 			installHelm()
 		})
-		Context("check local-disk-manager", func() {
-			It("check status", func() {
+		ginkgo.Context("check local-disk-manager", func() {
+			ginkgo.It("check status", func() {
 				daemonset := &appsv1.DaemonSet{}
 				daemonsetKey := k8sclient.ObjectKey{
 					Name:      "local-disk-manager",
@@ -33,10 +33,10 @@ var _ = Describe("volume", func() {
 					f.ExpectNoError(err)
 					fmt.Printf("%+v \n", err)
 				}
-				Expect(daemonset.Status.DesiredNumberScheduled).To(Equal(daemonset.Status.NumberAvailable))
+				gomega.Expect(daemonset.Status.DesiredNumberScheduled).To(gomega.Equal(daemonset.Status.NumberAvailable))
 			})
 		})
-		It("delete helm", func() {
+		ginkgo.It("delete helm", func() {
 			uninstallHelm()
 
 		})
