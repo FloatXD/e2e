@@ -264,7 +264,6 @@ var _ = Describe("volume", func() {
 		})
 		Context("HA test", func() {
 			It("Write test file", func() {
-
 				output := runInLinux("kubectl get pod |grep demo-2048")
 				containerId := strings.Split(output, "   ")[0]
 				output = runInLinux("kubectl exec " + containerId + " -- sh -c \"cd /data && echo it-is-a-test >test\"")
