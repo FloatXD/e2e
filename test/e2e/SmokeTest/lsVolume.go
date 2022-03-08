@@ -9,11 +9,14 @@ import (
 	"github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/selection"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"time"
 )
 
@@ -188,19 +191,101 @@ var _ = ginkgo.Describe("volume", func() {
 		})
 		ginkgo.Context("Using volumes", func() {
 			ginkgo.It("Write", func() {
-				//create a request
-				output := runInLinux("kubectl get pod |grep demo-2048")
-				containerId := strings.Split(output, "   ")[0]
-				output = runInLinux("kubectl exec " + containerId + " -- sh -c \"cd /data && echo it-is-a-test >test\"")
-				output = runInLinux("kubectl exec " + containerId + " -- sh -c \"cd /data && cat test\"")
-				gomega.Expect(output).To(gomega.Equal("it-is-a-test\n"))
+
+				config, err := config.GetConfig()
+				if err != nil {
+					return
+				}
+
+				deployment := &appsv1.Deployment{}
+				deployKey := k8sclient.ObjectKey{
+					Name:      "demo-2048",
+					Namespace: "default",
+				}
+				err = client.Get(context.TODO(), deployKey, deployment)
+				if err != nil {
+					fmt.Printf("%+v \n", err)
+					f.ExpectNoError(err)
+				}
+
+				apps, err := labels.NewRequirement("app", selection.In, []string{"demo"})
+				selector := labels.NewSelector()
+				selector = selector.Add(*apps)
+				listOption := k8sclient.ListOptions{
+					LabelSelector: selector,
+				}
+				podlist := &v1.PodList{}
+				err = client.List(context.TODO(), podlist, &listOption)
+
+				if err != nil {
+					fmt.Printf("%+v \n", err)
+					f.ExpectNoError(err)
+				}
+
+				containers := deployment.Spec.Template.Spec.Containers
+				for _, container := range containers {
+					for _, pod := range podlist.Items {
+						_, _, err := ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && echo it-is-a-test >test", container.Name)
+						if err != nil {
+							fmt.Printf("%+v \n", err)
+							f.ExpectNoError(err)
+						}
+						output, _, err := ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && cat test", container.Name)
+						if err != nil {
+							fmt.Printf("%+v \n", err)
+							f.ExpectNoError(err)
+						}
+						gomega.Expect(output).To(gomega.Equal("it-is-a-test"))
+					}
+				}
 			})
 			ginkgo.It("Delete", func() {
-				output := runInLinux("kubectl get pod |grep demo-2048")
-				containerId := strings.Split(output, "   ")[0]
-				output = runInLinux("kubectl exec " + containerId + " -- sh -c \"cd /data && rm -rf test\"")
-				output = runInLinux("kubectl exec " + containerId + " -- sh -c \"cd /data && ls \"")
-				gomega.Expect(output).To(gomega.Equal(""))
+				config, err := config.GetConfig()
+				if err != nil {
+					return
+				}
+
+				deployment := &appsv1.Deployment{}
+				deployKey := k8sclient.ObjectKey{
+					Name:      "demo-2048",
+					Namespace: "default",
+				}
+				err = client.Get(context.TODO(), deployKey, deployment)
+				if err != nil {
+					fmt.Printf("%+v \n", err)
+					f.ExpectNoError(err)
+				}
+
+				apps, err := labels.NewRequirement("app", selection.In, []string{"demo"})
+				selector := labels.NewSelector()
+				selector = selector.Add(*apps)
+				listOption := k8sclient.ListOptions{
+					LabelSelector: selector,
+				}
+				podlist := &v1.PodList{}
+				err = client.List(context.TODO(), podlist, &listOption)
+
+				if err != nil {
+					fmt.Printf("%+v \n", err)
+					f.ExpectNoError(err)
+				}
+
+				containers := deployment.Spec.Template.Spec.Containers
+				for _, container := range containers {
+					for _, pod := range podlist.Items {
+						_, _, err := ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && rm -rf test", container.Name)
+						if err != nil {
+							fmt.Printf("%+v \n", err)
+							f.ExpectNoError(err)
+						}
+						output, _, err := ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && ls", container.Name)
+						if err != nil {
+							fmt.Printf("%+v \n", err)
+							f.ExpectNoError(err)
+						}
+						gomega.Expect(output).To(gomega.Equal(""))
+					}
+				}
 			})
 		})
 		ginkgo.Context("Delete test object", func() {

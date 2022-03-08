@@ -1,6 +1,7 @@
 package SmokeTest
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	ldapis "github.com/hwameistor/local-disk-manager/pkg/apis"
@@ -8,10 +9,16 @@ import (
 	_ "github.com/niulechuan/e2e/pkg/apis"
 	"github.com/niulechuan/e2e/test/e2e/framework"
 	apiv1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/remotecommand"
 	"os/exec"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"strings"
 	"time"
 )
 
@@ -194,4 +201,45 @@ func deleteAllSC() bool {
 	}
 	return true
 
+}
+func ExecInPod(config *rest.Config, namespace, podName, command, containerName string) (string, string, error) {
+	k8sCli, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return "", "", err
+	}
+	cmd := []string{
+		"sh",
+		"-c",
+		command,
+	}
+	const tty = false
+	req := k8sCli.CoreV1().RESTClient().Post().
+		Resource("pods").
+		Name(podName).
+		Namespace(namespace).SubResource("exec").Param("container", containerName)
+	req.VersionedParams(
+		&v1.PodExecOptions{
+			Command: cmd,
+			Stdin:   false,
+			Stdout:  true,
+			Stderr:  true,
+			TTY:     tty,
+		},
+		scheme.ParameterCodec,
+	)
+
+	var stdout, stderr bytes.Buffer
+	myExec, err := remotecommand.NewSPDYExecutor(config, "POST", req.URL())
+	if err != nil {
+		return "", "", err
+	}
+	err = myExec.Stream(remotecommand.StreamOptions{
+		Stdin:  nil,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	})
+	if err != nil {
+		return "", "", err
+	}
+	return strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()), err
 }
