@@ -11,12 +11,14 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
+	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
 	"os/exec"
+	"regexp"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 	"time"
@@ -70,7 +72,27 @@ func addLabels() {
 		_, boolLabel := node.Labels["localstorage.hwameistor.io/local-storage"]
 		if !boolLabel {
 			node.Labels["localstorage.hwameistor.io/local-storage"] = "true"
-			node.Labels["csi.driver.hwameistor.io/localstorage"] = "true"
+			fmt.Printf("adding labels \n")
+			err := client.Update(context.TODO(), node)
+			if err != nil {
+				fmt.Printf("%+v \n", err)
+				f.ExpectNoError(err)
+			}
+			time.Sleep(20 * time.Second)
+		}
+		_, boolLabel = node.Labels["csi.driver.hwameistor.io/local-storage"]
+		if !boolLabel {
+			node.Labels["csi.driver.hwameistor.io/local-storage"] = "true"
+			fmt.Printf("adding labels \n")
+			err := client.Update(context.TODO(), node)
+			if err != nil {
+				fmt.Printf("%+v \n", err)
+				f.ExpectNoError(err)
+			}
+			time.Sleep(20 * time.Second)
+		}
+		_, boolLabel = node.Labels["csi.driver.hwameistor.io/local-storage"]
+		if !boolLabel {
 			node.Labels["localstorage.hwameistor.io/local-storage-topology-node"] = nodes.Name
 			fmt.Printf("adding labels \n")
 			err := client.Update(context.TODO(), node)
@@ -78,15 +100,14 @@ func addLabels() {
 				fmt.Printf("%+v \n", err)
 				f.ExpectNoError(err)
 			}
-			fmt.Printf("wait 1 minute\n")
-			time.Sleep(1 * time.Minute)
+			time.Sleep(20 * time.Second)
 		}
 	}
 }
 
 func installHelm() {
 	fmt.Printf("helm install hwameistor\n")
-	_ = runInLinux("cd /root/helm-charts-hwameistor-0.2.3/charts && helm install hwameistor -n hwameistor --create-namespace --generate-name")
+	_ = runInLinux("cd /root/helm-charts-main/charts && helm install hwameistor -n hwameistor --create-namespace --generate-name")
 	fmt.Printf("waiting for intall hwameistor\n")
 	time.Sleep(1 * time.Minute)
 }
@@ -94,7 +115,25 @@ func uninstallHelm() {
 	fmt.Printf("helm uninstall hwameistor\n")
 	_ = runInLinux("helm list -A | grep 'hwameistor' | awk '{print $1}' | xargs helm uninstall -n hwameistor")
 	fmt.Printf("clean all hwameistor crd\n")
-	_ = runInLinux("kubectl get crd | grep 'hwameistor' | awk '{print $1}' | xargs -n1 kubectl delete crd")
+	f := framework.NewDefaultFramework(extv1.AddToScheme)
+	client := f.GetClient()
+	crdList := extv1.CustomResourceDefinitionList{}
+	err := client.List(context.TODO(), &crdList)
+	if err != nil {
+		fmt.Printf("%+v \n", err)
+		f.ExpectNoError(err)
+	}
+	for _, crd := range crdList.Items {
+		myBool, _ := regexp.MatchString(".*hwameistor.*", crd.Name)
+		if myBool {
+			err := client.Delete(context.TODO(), &crd)
+			if err != nil {
+				fmt.Printf("%+v \n", err)
+				f.ExpectNoError(err)
+			}
+		}
+
+	}
 	fmt.Printf("waiting for uninstall hwameistor\n")
 	time.Sleep(1 * time.Minute)
 
@@ -129,7 +168,7 @@ func createLdc() {
 
 }
 
-func deleteAllPVC() bool {
+func deleteAllPVC() {
 	fmt.Printf("delete All PVC\n")
 	f := framework.NewDefaultFramework(ldapis.AddToScheme)
 	client := f.GetClient()
@@ -139,34 +178,21 @@ func deleteAllPVC() bool {
 		fmt.Printf("get pvc list error:%+v \n", err)
 		f.ExpectNoError(err)
 	}
-	waitTime := 0
 
-	for len(pvcList.Items) != 0 {
-		if waitTime < 90 {
-			for _, pvc := range pvcList.Items {
-				fmt.Printf("delete pvc:%+v \n", pvc.Name)
-				err := client.Delete(context.TODO(), &pvc)
-				if err != nil {
-					fmt.Printf("delete pvc error:%+v \n", err)
-					f.ExpectNoError(err)
-				}
-				time.Sleep(30 * time.Second)
-			}
-			pvcList = &apiv1.PersistentVolumeClaimList{}
-			waitTime = waitTime + 5
-			time.Sleep(5 * time.Second)
-
-		} else {
-			fmt.Printf("delete PVC out of time")
-			return false
+	for _, pvc := range pvcList.Items {
+		fmt.Printf("delete pvc:%+v \n", pvc.Name)
+		ctx, _ := context.WithTimeout(context.TODO(), time.Minute)
+		err := client.Delete(ctx, &pvc)
+		if err != nil {
+			fmt.Printf("delete pvc error:%+v \n", err)
+			f.ExpectNoError(err)
 		}
-
+		time.Sleep(30 * time.Second)
 	}
-	return true
 
 }
 
-func deleteAllSC() bool {
+func deleteAllSC() {
 	fmt.Printf("delete All SC\n")
 	f := framework.NewDefaultFramework(ldapis.AddToScheme)
 	client := f.GetClient()
@@ -176,30 +202,17 @@ func deleteAllSC() bool {
 		fmt.Printf("get sc list error:%+v \n", err)
 		f.ExpectNoError(err)
 	}
-	waitTime := 0
 
-	for len(scList.Items) != 0 {
-		if waitTime < 90 {
-			for _, sc := range scList.Items {
-				fmt.Printf("delete sc:%+v \n", sc.Name)
-				err := client.Delete(context.TODO(), &sc)
-				if err != nil {
-					fmt.Printf("delete sc error:%+v \n", err)
-					f.ExpectNoError(err)
-				}
-				time.Sleep(30 * time.Second)
-			}
-			scList = &storagev1.StorageClassList{}
-			waitTime = waitTime + 5
-			time.Sleep(5 * time.Second)
-
-		} else {
-			fmt.Printf("delete sc out of time")
-			return false
+	for _, sc := range scList.Items {
+		fmt.Printf("delete sc:%+v \n", sc.Name)
+		ctx, _ := context.WithTimeout(context.TODO(), time.Minute)
+		err := client.Delete(ctx, &sc)
+		if err != nil {
+			fmt.Printf("delete sc error:%+v \n", err)
+			f.ExpectNoError(err)
 		}
-
+		time.Sleep(30 * time.Second)
 	}
-	return true
 
 }
 func ExecInPod(config *rest.Config, namespace, podName, command, containerName string) (string, string, error) {

@@ -25,13 +25,15 @@ var _ = ginkgo.Describe("volume", func() {
 
 	f := framework.NewDefaultFramework(lsapi.AddToScheme)
 	client := f.GetClient()
+	ctx := context.TODO()
 	ginkgo.Describe("ha-dlocal test", func() {
 
 		ginkgo.Context("create a HA-SC", func() {
 			ginkgo.It("get ready", func() {
 				installHelm()
-				createLdc()
 				addLabels()
+				createLdc()
+
 			})
 			ginkgo.It("SC", func() {
 				//create sc
@@ -54,7 +56,7 @@ var _ = ginkgo.Describe("volume", func() {
 					AllowVolumeExpansion: boolPter(true),
 					VolumeBindingMode:    &waitForFirstConsumerObj,
 				}
-				err := client.Create(context.TODO(), examplesc)
+				err := client.Create(ctx, examplesc)
 				if err != nil {
 					fmt.Printf("Create SC failed ：%+v \n", err)
 					f.ExpectNoError(err)
@@ -75,12 +77,12 @@ var _ = ginkgo.Describe("volume", func() {
 						StorageClassName: &storageClassName,
 						Resources: apiv1.ResourceRequirements{
 							Requests: apiv1.ResourceList{
-								apiv1.ResourceStorage: resource.MustParse("1Gi"),
+								apiv1.ResourceStorage: resource.MustParse("100Mi"),
 							},
 						},
 					},
 				}
-				err := client.Create(context.TODO(), examplePvc)
+				err := client.Create(ctx, examplePvc)
 				if err != nil {
 					fmt.Printf("Create PVC failed ：%+v \n", err)
 					f.ExpectNoError(err)
@@ -91,43 +93,12 @@ var _ = ginkgo.Describe("volume", func() {
 					Name:      "pvc-lvm-ha",
 					Namespace: "default",
 				}
-				err = client.Get(context.TODO(), pvcKey, pvc)
+				err = client.Get(ctx, pvcKey, pvc)
 				if err != nil {
 					fmt.Printf("Failed to find pvc ：%+v \n", err)
 					f.ExpectNoError(err)
 				}
 				gomega.Expect(pvc.Status.Phase).To(gomega.Equal(apiv1.ClaimPending))
-			})
-			ginkgo.It("create a localvolumemigrate", func() {
-
-				pvc := &apiv1.PersistentVolumeClaim{}
-				pvcKey := k8sclient.ObjectKey{
-					Name:      "pvc-lvm-ha",
-					Namespace: "default",
-				}
-				err := client.Get(context.TODO(), pvcKey, pvc)
-				if err != nil {
-					fmt.Printf("Failed to find pvc ：%+v \n", err)
-					f.ExpectNoError(err)
-				}
-				exlvmi := &lsv1.LocalVolumeMigrate{
-					TypeMeta: metav1.TypeMeta{},
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "localvolumemigrate-1",
-					},
-					Spec: lsv1.LocalVolumeMigrateSpec{
-						NodeName:   "k8s-master",
-						VolumeName: pvc.Spec.VolumeName,
-					},
-					Status: lsv1.LocalVolumeMigrateStatus{},
-				}
-				err = client.Create(context.TODO(), exlvmi)
-				if err != nil {
-					fmt.Printf("Create lvmi failed ：%+v \n", err)
-					f.ExpectNoError(err)
-				}
-				fmt.Printf("wait 2 minutes for lvr")
-				time.Sleep(2 * time.Minute)
 			})
 
 		})
@@ -137,7 +108,7 @@ var _ = ginkgo.Describe("volume", func() {
 				//create deployment
 				exampleDeployment := &appsv1.Deployment{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "demo-2048-ha",
+						Name:      HaDeploymentName,
 						Namespace: "default",
 					},
 					Spec: appsv1.DeploymentSpec{
@@ -214,7 +185,7 @@ var _ = ginkgo.Describe("volume", func() {
 						},
 					},
 				}
-				err := client.Create(context.TODO(), exampleDeployment)
+				err := client.Create(ctx, exampleDeployment)
 				if err != nil {
 					fmt.Printf("%+v \n", err)
 					f.ExpectNoError(err)
@@ -225,7 +196,7 @@ var _ = ginkgo.Describe("volume", func() {
 					Name:      "pvc-lvm-ha",
 					Namespace: "default",
 				}
-				err = client.Get(context.TODO(), pvcKey, pvc)
+				err = client.Get(ctx, pvcKey, pvc)
 				if err != nil {
 					fmt.Printf("%+v \n", err)
 					f.ExpectNoError(err)
@@ -235,10 +206,10 @@ var _ = ginkgo.Describe("volume", func() {
 			ginkgo.It("deploy STATUS should be AVAILABLE", func() {
 				deployment := &appsv1.Deployment{}
 				deployKey := k8sclient.ObjectKey{
-					Name:      "demo-2048-ha",
+					Name:      HaDeploymentName,
 					Namespace: "default",
 				}
-				err := client.Get(context.TODO(), deployKey, deployment)
+				err := client.Get(ctx, deployKey, deployment)
 				if err != nil {
 					fmt.Printf("%+v \n", err)
 					f.ExpectNoError(err)
@@ -257,10 +228,10 @@ var _ = ginkgo.Describe("volume", func() {
 
 				deployment := &appsv1.Deployment{}
 				deployKey := k8sclient.ObjectKey{
-					Name:      "demo-2048-ha",
+					Name:      HaDeploymentName,
 					Namespace: "default",
 				}
-				err = client.Get(context.TODO(), deployKey, deployment)
+				err = client.Get(ctx, deployKey, deployment)
 				if err != nil {
 					fmt.Printf("%+v \n", err)
 					f.ExpectNoError(err)
@@ -273,7 +244,7 @@ var _ = ginkgo.Describe("volume", func() {
 					LabelSelector: selector,
 				}
 				podlist := &v1.PodList{}
-				err = client.List(context.TODO(), podlist, &listOption)
+				err = client.List(ctx, podlist, &listOption)
 
 				if err != nil {
 					fmt.Printf("%+v \n", err)
@@ -281,8 +252,8 @@ var _ = ginkgo.Describe("volume", func() {
 				}
 
 				containers := deployment.Spec.Template.Spec.Containers
-				for _, container := range containers {
-					for _, pod := range podlist.Items {
+				for _, pod := range podlist.Items {
+					for _, container := range containers {
 						_, _, err := ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && echo it-is-a-test >test", container.Name)
 						if err != nil {
 							fmt.Printf("%+v \n", err)
@@ -305,10 +276,10 @@ var _ = ginkgo.Describe("volume", func() {
 
 				deployment := &appsv1.Deployment{}
 				deployKey := k8sclient.ObjectKey{
-					Name:      "demo-2048-ha",
+					Name:      HaDeploymentName,
 					Namespace: "default",
 				}
-				err = client.Get(context.TODO(), deployKey, deployment)
+				err = client.Get(ctx, deployKey, deployment)
 				if err != nil {
 					fmt.Printf("%+v \n", err)
 					f.ExpectNoError(err)
@@ -321,7 +292,7 @@ var _ = ginkgo.Describe("volume", func() {
 					LabelSelector: selector,
 				}
 				podlist := &v1.PodList{}
-				err = client.List(context.TODO(), podlist, &listOption)
+				err = client.List(ctx, podlist, &listOption)
 
 				if err != nil {
 					fmt.Printf("%+v \n", err)
@@ -329,8 +300,8 @@ var _ = ginkgo.Describe("volume", func() {
 				}
 
 				containers := deployment.Spec.Template.Spec.Containers
-				for _, container := range containers {
-					for _, pod := range podlist.Items {
+				for _, pod := range podlist.Items {
+					for _, container := range containers {
 						_, _, err := ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && rm -rf test", container.Name)
 						if err != nil {
 							fmt.Printf("%+v \n", err)
@@ -347,6 +318,47 @@ var _ = ginkgo.Describe("volume", func() {
 			})
 		})
 		ginkgo.Context("HA test", func() {
+			ginkgo.It("create a localvolumemigrate", func() {
+
+				lvrList := &lsv1.LocalVolumeReplicaList{}
+				err := client.List(ctx, lvrList)
+				for _, lvr := range lvrList.Items {
+					fmt.Printf("%+v \n", lvr.Spec.NodeName)
+					if lvr.Spec.NodeName == "k8s-master" {
+						pvc := &apiv1.PersistentVolumeClaim{}
+						pvcKey := k8sclient.ObjectKey{
+							Name:      "pvc-lvm-ha",
+							Namespace: "default",
+						}
+						err = client.Get(ctx, pvcKey, pvc)
+						if err != nil {
+							fmt.Printf("Failed to find pvc ：%+v \n", err)
+							f.ExpectNoError(err)
+						}
+						exlvmi := &lsv1.LocalVolumeMigrate{
+							TypeMeta: metav1.TypeMeta{},
+							ObjectMeta: metav1.ObjectMeta{
+								Name: "localvolumemigrate-1",
+							},
+							Spec: lsv1.LocalVolumeMigrateSpec{
+								NodeName:   "k8s-master",
+								VolumeName: pvc.Spec.VolumeName,
+							},
+							Status: lsv1.LocalVolumeMigrateStatus{},
+						}
+						err = client.Create(ctx, exlvmi)
+						if err != nil {
+							fmt.Printf("Create lvmi failed ：%+v \n", err)
+							f.ExpectNoError(err)
+						}
+						fmt.Printf("wait 3 minutes for lvr")
+						time.Sleep(2 * time.Minute)
+						break
+					}
+				}
+
+			})
+
 			ginkgo.It("Write test file", func() {
 				config, err := config.GetConfig()
 				if err != nil {
@@ -355,10 +367,10 @@ var _ = ginkgo.Describe("volume", func() {
 
 				deployment := &appsv1.Deployment{}
 				deployKey := k8sclient.ObjectKey{
-					Name:      "demo-2048-ha",
+					Name:      HaDeploymentName,
 					Namespace: "default",
 				}
-				err = client.Get(context.TODO(), deployKey, deployment)
+				err = client.Get(ctx, deployKey, deployment)
 				if err != nil {
 					fmt.Printf("%+v \n", err)
 					f.ExpectNoError(err)
@@ -371,7 +383,7 @@ var _ = ginkgo.Describe("volume", func() {
 					LabelSelector: selector,
 				}
 				podlist := &v1.PodList{}
-				err = client.List(context.TODO(), podlist, &listOption)
+				err = client.List(ctx, podlist, &listOption)
 
 				if err != nil {
 					fmt.Printf("%+v \n", err)
@@ -379,8 +391,8 @@ var _ = ginkgo.Describe("volume", func() {
 				}
 
 				containers := deployment.Spec.Template.Spec.Containers
-				for _, container := range containers {
-					for _, pod := range podlist.Items {
+				for _, pod := range podlist.Items {
+					for _, container := range containers {
 						_, _, err := ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && echo it-is-a-test >test", container.Name)
 						if err != nil {
 							fmt.Printf("%+v \n", err)
@@ -399,10 +411,10 @@ var _ = ginkgo.Describe("volume", func() {
 				//delete deploy
 				deployment := &appsv1.Deployment{}
 				deployKey := k8sclient.ObjectKey{
-					Name:      "demo-2048-ha",
+					Name:      HaDeploymentName,
 					Namespace: "default",
 				}
-				err := client.Get(context.TODO(), deployKey, deployment)
+				err := client.Get(ctx, deployKey, deployment)
 				if err != nil {
 					f.ExpectNoError(err)
 				}
@@ -423,10 +435,10 @@ var _ = ginkgo.Describe("volume", func() {
 				}
 				deployment.Spec.Template.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms = newAffinity
 
-				err = client.Update(context.TODO(), deployment)
+				err = client.Update(ctx, deployment)
 				fmt.Printf("wait 1 minute")
 				time.Sleep(1 * time.Minute)
-				err = client.Get(context.TODO(), deployKey, deployment)
+				err = client.Get(ctx, deployKey, deployment)
 				if err != nil {
 					fmt.Printf("%+v \n", err)
 					f.ExpectNoError(err)
@@ -442,10 +454,10 @@ var _ = ginkgo.Describe("volume", func() {
 
 				deployment := &appsv1.Deployment{}
 				deployKey := k8sclient.ObjectKey{
-					Name:      "demo-2048-ha",
+					Name:      HaDeploymentName,
 					Namespace: "default",
 				}
-				err = client.Get(context.TODO(), deployKey, deployment)
+				err = client.Get(ctx, deployKey, deployment)
 				if err != nil {
 					fmt.Printf("%+v \n", err)
 					f.ExpectNoError(err)
@@ -458,7 +470,7 @@ var _ = ginkgo.Describe("volume", func() {
 					LabelSelector: selector,
 				}
 				podlist := &v1.PodList{}
-				err = client.List(context.TODO(), podlist, &listOption)
+				err = client.List(ctx, podlist, &listOption)
 
 				if err != nil {
 					fmt.Printf("%+v \n", err)
@@ -466,13 +478,8 @@ var _ = ginkgo.Describe("volume", func() {
 				}
 
 				containers := deployment.Spec.Template.Spec.Containers
-				for _, container := range containers {
-					for _, pod := range podlist.Items {
-						_, _, err := ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && echo it-is-a-test >test", container.Name)
-						if err != nil {
-							fmt.Printf("%+v \n", err)
-							f.ExpectNoError(err)
-						}
+				for _, pod := range podlist.Items {
+					for _, container := range containers {
 						output, _, err := ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && cat test", container.Name)
 						if err != nil {
 							fmt.Printf("%+v \n", err)
@@ -488,15 +495,15 @@ var _ = ginkgo.Describe("volume", func() {
 				//delete deploy
 				deployment := &appsv1.Deployment{}
 				deployKey := k8sclient.ObjectKey{
-					Name:      "demo-2048-ha",
+					Name:      HaDeploymentName,
 					Namespace: "default",
 				}
-				err := client.Get(context.TODO(), deployKey, deployment)
+				err := client.Get(ctx, deployKey, deployment)
 				if err != nil {
 					fmt.Printf("%+v \n", err)
 					f.ExpectNoError(err)
 				}
-				err = client.Delete(context.TODO(), deployment)
+				err = client.Delete(ctx, deployment)
 				if err != nil {
 					fmt.Printf("%+v \n", err)
 					f.ExpectNoError(err)
@@ -504,12 +511,10 @@ var _ = ginkgo.Describe("volume", func() {
 
 			})
 			ginkgo.It("delete all pvc ", func() {
-				r := deleteAllPVC()
-				gomega.Expect(r).To(gomega.Equal(true))
+				deleteAllPVC()
 			})
 			ginkgo.It("delete all sc", func() {
-				r := deleteAllSC()
-				gomega.Expect(r).To(gomega.Equal(true))
+				deleteAllSC()
 			})
 			ginkgo.It("delete helm", func() {
 				uninstallHelm()

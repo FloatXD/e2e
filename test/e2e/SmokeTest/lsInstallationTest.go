@@ -34,6 +34,7 @@ var _ = ginkgo.Describe("volume", func() {
 					f.ExpectNoError(err)
 
 				}
+
 				gomega.Expect(daemonset.Status.DesiredNumberScheduled).To(gomega.Equal(daemonset.Status.NumberAvailable))
 			})
 		})

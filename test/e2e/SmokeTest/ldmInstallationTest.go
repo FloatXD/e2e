@@ -15,7 +15,7 @@ import (
 var _ = ginkgo.Describe("volume", func() {
 	f := framework.NewDefaultFramework(ldapis.AddToScheme)
 	client := f.GetClient()
-
+	ctx := context.TODO()
 	ginkgo.Describe("LDM test", func() {
 		ginkgo.It("get ready", func() {
 			installHelm()
@@ -28,7 +28,7 @@ var _ = ginkgo.Describe("volume", func() {
 					Namespace: "hwameistor",
 				}
 
-				err := client.Get(context.TODO(), daemonsetKey, daemonset)
+				err := client.Get(ctx, daemonsetKey, daemonset)
 				if err != nil {
 					f.ExpectNoError(err)
 					fmt.Printf("%+v \n", err)

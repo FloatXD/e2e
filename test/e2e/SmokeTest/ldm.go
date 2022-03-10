@@ -17,8 +17,8 @@ import (
 var _ = ginkgo.Describe("volume", func() {
 	f := framework.NewDefaultFramework(ldapis.AddToScheme)
 	client := f.GetClient()
+	ctx := context.TODO()
 	ginkgo.Describe("LDM test", func() {
-
 		ginkgo.Context("LD test", func() {
 			localDiskNumber := 0
 			ginkgo.It("get ready", func() {
@@ -26,7 +26,7 @@ var _ = ginkgo.Describe("volume", func() {
 			})
 			ginkgo.It("Check existing LD", func() {
 				localDiskList := &ldv1.LocalDiskList{}
-				err := client.List(context.TODO(), localDiskList)
+				err := client.List(ctx, localDiskList)
 				if err != nil {
 					f.ExpectNoError(err)
 					fmt.Printf("%+v \n", err)
@@ -42,10 +42,11 @@ var _ = ginkgo.Describe("volume", func() {
 			ginkgo.It("Manage new disks", func() {
 				newlocalDiskNumber := 0
 				output := runInLinux("cd /root && sh adddisk.sh")
+				fmt.Printf("add  disk : %+v\n", output)
 				fmt.Printf("wait 2 minutes \n")
 				time.Sleep(2 * time.Minute)
 				localDiskList := &ldv1.LocalDiskList{}
-				err := client.List(context.TODO(), localDiskList)
+				err := client.List(ctx, localDiskList)
 				if err != nil {
 					f.ExpectNoError(err)
 					fmt.Printf("%+v \n", err)
@@ -58,9 +59,11 @@ var _ = ginkgo.Describe("volume", func() {
 				fmt.Printf("There are %d local volumes \n", newlocalDiskNumber)
 
 				output = runInLinux("cd /root && sh deletedisk.sh")
+				fmt.Printf("delete disk : %+v\n", output)
 				gomega.Expect(newlocalDiskNumber).ToNot(gomega.Equal(localDiskNumber))
 
 			})
+
 		})
 		ginkgo.Context("LDC test", func() {
 			ginkgo.It("Create new LDC", func() {
@@ -72,7 +75,7 @@ var _ = ginkgo.Describe("volume", func() {
 						Name:      "localdiskclaim-" + nodes.Name,
 						Namespace: "kube-system",
 					}
-					err := client.Get(context.TODO(), localDiskClaimKey, localDiskClaim)
+					err := client.Get(ctx, localDiskClaimKey, localDiskClaim)
 					if err != nil {
 						fmt.Printf("%+v \n", err)
 						f.ExpectNoError(err)

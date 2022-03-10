@@ -10,6 +10,7 @@ require (
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.17.0
 	k8s.io/api v0.23.0
+	k8s.io/apiextensions-apiserver v0.18.6
 	k8s.io/apimachinery v0.23.0
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/klog v1.0.0 // indirect
