@@ -8,7 +8,9 @@ require (
 	github.com/hwameistor/local-disk-manager v0.0.1
 	github.com/hwameistor/local-storage v0.0.1
 	github.com/onsi/ginkgo v1.16.5
+	github.com/onsi/ginkgo/v2 v2.1.3
 	github.com/onsi/gomega v1.17.0
+	github.com/sirupsen/logrus v1.6.0
 	k8s.io/api v0.23.0
 	k8s.io/apiextensions-apiserver v0.18.6
 	k8s.io/apimachinery v0.23.0

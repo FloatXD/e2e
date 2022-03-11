@@ -1,7 +1,6 @@
 package framework
 
 import (
-	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -80,7 +79,7 @@ func NewFramework(options Options, client ctrlclient.Client, addToSchemeFuncs ..
 // DefaultBeforeEach gets clientsets
 func (f *Framework) defaultConfig() {
 	if f.client == nil {
-		ginkgo.By("Creating a kubernetes client")
+
 		cfg, err := config.GetConfig()
 		f.ExpectNoError(err)
 

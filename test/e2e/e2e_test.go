@@ -7,8 +7,8 @@ import (
 	"time"
 
 	_ "github.com/niulechuan/e2e/test/e2e/SmokeTest"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 )
 
 func TestMain(m *testing.M) {
@@ -17,6 +17,6 @@ func TestMain(m *testing.M) {
 }
 
 func TestE2E(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "hwameistor e2e test")
+	gomega.RegisterFailHandler(ginkgo.Fail)
+	ginkgo.RunSpecs(t, "hwameistor e2e test")
 }

@@ -3,10 +3,10 @@ package SmokeTest
 import (
 	"bytes"
 	"context"
-	"fmt"
 	ldapis "github.com/hwameistor/local-disk-manager/pkg/apis"
 	ldv1 "github.com/hwameistor/local-disk-manager/pkg/apis/hwameistor/v1alpha1"
-	_ "github.com/niulechuan/e2e/pkg/apis"
+	"github.com/sirupsen/logrus"
+
 	"github.com/niulechuan/e2e/test/e2e/framework"
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
@@ -31,33 +31,33 @@ func boolPter(i bool) *bool { return &i }
 func runInLinux(cmd string) string {
 	result, err := exec.Command("/bin/sh", "-c", cmd).Output()
 	if err != nil {
-		fmt.Printf("ERROR:%+v \n", err)
+		logrus.Printf("ERROR:%+v \n", err)
 	}
 	return string(result)
 }
 
 func nodeList() *apiv1.NodeList {
-	fmt.Printf("get node list\n")
+	logrus.Printf("get node list\n")
 	f := framework.NewDefaultFramework(ldapis.AddToScheme)
 	client := f.GetClient()
 	nodelist := &apiv1.NodeList{}
 	err := client.List(context.TODO(), nodelist)
 	if err != nil {
 		f.ExpectNoError(err)
-		fmt.Printf("%+v \n", err)
+		logrus.Printf("%+v \n", err)
 	}
 	return nodelist
 }
 
 func addLabels() {
-	fmt.Printf("add node labels\n")
+	logrus.Printf("add node labels\n")
 	f := framework.NewDefaultFramework(ldapis.AddToScheme)
 	client := f.GetClient()
 	nodelist := &apiv1.NodeList{}
 	err := client.List(context.TODO(), nodelist)
 	if err != nil {
 		f.ExpectNoError(err)
-		fmt.Printf("%+v \n", err)
+		logrus.Printf("%+v \n", err)
 	}
 	for _, nodes := range nodelist.Items {
 		node := &apiv1.Node{}
@@ -66,16 +66,16 @@ func addLabels() {
 		}
 		err := client.Get(context.TODO(), nodeKey, node)
 		if err != nil {
-			fmt.Printf("%+v \n", err)
+			logrus.Printf("%+v \n", err)
 			f.ExpectNoError(err)
 		}
 		_, boolLabel := node.Labels["localstorage.hwameistor.io/local-storage"]
 		if !boolLabel {
 			node.Labels["localstorage.hwameistor.io/local-storage"] = "true"
-			fmt.Printf("adding labels \n")
+			logrus.Printf("adding labels \n")
 			err := client.Update(context.TODO(), node)
 			if err != nil {
-				fmt.Printf("%+v \n", err)
+				logrus.Printf("%+v \n", err)
 				f.ExpectNoError(err)
 			}
 			time.Sleep(20 * time.Second)
@@ -83,10 +83,10 @@ func addLabels() {
 		_, boolLabel = node.Labels["csi.driver.hwameistor.io/local-storage"]
 		if !boolLabel {
 			node.Labels["csi.driver.hwameistor.io/local-storage"] = "true"
-			fmt.Printf("adding labels \n")
+			logrus.Printf("adding labels \n")
 			err := client.Update(context.TODO(), node)
 			if err != nil {
-				fmt.Printf("%+v \n", err)
+				logrus.Printf("%+v \n", err)
 				f.ExpectNoError(err)
 			}
 			time.Sleep(20 * time.Second)
@@ -94,10 +94,10 @@ func addLabels() {
 		_, boolLabel = node.Labels["csi.driver.hwameistor.io/local-storage"]
 		if !boolLabel {
 			node.Labels["localstorage.hwameistor.io/local-storage-topology-node"] = nodes.Name
-			fmt.Printf("adding labels \n")
+			logrus.Printf("adding labels \n")
 			err := client.Update(context.TODO(), node)
 			if err != nil {
-				fmt.Printf("%+v \n", err)
+				logrus.Printf("%+v \n", err)
 				f.ExpectNoError(err)
 			}
 			time.Sleep(20 * time.Second)
@@ -106,21 +106,21 @@ func addLabels() {
 }
 
 func installHelm() {
-	fmt.Printf("helm install hwameistor\n")
+	logrus.Printf("helm install hwameistor\n")
 	_ = runInLinux("cd /root/helm-charts-main/charts && helm install hwameistor -n hwameistor --create-namespace --generate-name")
-	fmt.Printf("waiting for intall hwameistor\n")
+	logrus.Printf("waiting for intall hwameistor\n")
 	time.Sleep(1 * time.Minute)
 }
 func uninstallHelm() {
-	fmt.Printf("helm uninstall hwameistor\n")
+	logrus.Printf("helm uninstall hwameistor\n")
 	_ = runInLinux("helm list -A | grep 'hwameistor' | awk '{print $1}' | xargs helm uninstall -n hwameistor")
-	fmt.Printf("clean all hwameistor crd\n")
+	logrus.Printf("clean all hwameistor crd\n")
 	f := framework.NewDefaultFramework(extv1.AddToScheme)
 	client := f.GetClient()
 	crdList := extv1.CustomResourceDefinitionList{}
 	err := client.List(context.TODO(), &crdList)
 	if err != nil {
-		fmt.Printf("%+v \n", err)
+		logrus.Printf("%+v \n", err)
 		f.ExpectNoError(err)
 	}
 	for _, crd := range crdList.Items {
@@ -128,19 +128,19 @@ func uninstallHelm() {
 		if myBool {
 			err := client.Delete(context.TODO(), &crd)
 			if err != nil {
-				fmt.Printf("%+v \n", err)
+				logrus.Printf("%+v \n", err)
 				f.ExpectNoError(err)
 			}
 		}
 
 	}
-	fmt.Printf("waiting for uninstall hwameistor\n")
+	logrus.Printf("waiting for uninstall hwameistor\n")
 	time.Sleep(1 * time.Minute)
 
 }
 
 func createLdc() {
-	fmt.Printf("create ldc for each node\n")
+	logrus.Printf("create ldc for each node\n")
 	nodelist := nodeList()
 	for _, nodes := range nodelist.Items {
 		f := framework.NewDefaultFramework(ldapis.AddToScheme)
@@ -159,32 +159,32 @@ func createLdc() {
 		}
 		err := client.Create(context.TODO(), exmlocalDiskClaim)
 		if err != nil {
-			fmt.Printf("Create LDC failed ：%+v \n", err)
+			logrus.Printf("Create LDC failed ：%+v \n", err)
 			f.ExpectNoError(err)
 		}
 	}
-	fmt.Printf("wait 1 minutes for create ldc\n")
+	logrus.Printf("wait 1 minutes for create ldc\n")
 	time.Sleep(1 * time.Minute)
 
 }
 
 func deleteAllPVC() {
-	fmt.Printf("delete All PVC\n")
+	logrus.Printf("delete All PVC\n")
 	f := framework.NewDefaultFramework(ldapis.AddToScheme)
 	client := f.GetClient()
 	pvcList := &apiv1.PersistentVolumeClaimList{}
 	err := client.List(context.TODO(), pvcList)
 	if err != nil {
-		fmt.Printf("get pvc list error:%+v \n", err)
+		logrus.Printf("get pvc list error:%+v \n", err)
 		f.ExpectNoError(err)
 	}
 
 	for _, pvc := range pvcList.Items {
-		fmt.Printf("delete pvc:%+v \n", pvc.Name)
+		logrus.Printf("delete pvc:%+v \n", pvc.Name)
 		ctx, _ := context.WithTimeout(context.TODO(), time.Minute)
 		err := client.Delete(ctx, &pvc)
 		if err != nil {
-			fmt.Printf("delete pvc error:%+v \n", err)
+			logrus.Printf("delete pvc error:%+v \n", err)
 			f.ExpectNoError(err)
 		}
 		time.Sleep(30 * time.Second)
@@ -193,22 +193,22 @@ func deleteAllPVC() {
 }
 
 func deleteAllSC() {
-	fmt.Printf("delete All SC\n")
+	logrus.Printf("delete All SC\n")
 	f := framework.NewDefaultFramework(ldapis.AddToScheme)
 	client := f.GetClient()
 	scList := &storagev1.StorageClassList{}
 	err := client.List(context.TODO(), scList)
 	if err != nil {
-		fmt.Printf("get sc list error:%+v \n", err)
+		logrus.Printf("get sc list error:%+v \n", err)
 		f.ExpectNoError(err)
 	}
 
 	for _, sc := range scList.Items {
-		fmt.Printf("delete sc:%+v \n", sc.Name)
+		logrus.Printf("delete sc:%+v \n", sc.Name)
 		ctx, _ := context.WithTimeout(context.TODO(), time.Minute)
 		err := client.Delete(ctx, &sc)
 		if err != nil {
-			fmt.Printf("delete sc error:%+v \n", err)
+			logrus.Printf("delete sc error:%+v \n", err)
 			f.ExpectNoError(err)
 		}
 		time.Sleep(30 * time.Second)
