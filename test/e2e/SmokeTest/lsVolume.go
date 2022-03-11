@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-var _ = ginkgo.Describe("volume", func() {
+var _ = ginkgo.Describe("test localstorage volume", func() {
 
 	f := framework.NewDefaultFramework(apis.AddToScheme)
 	client := f.GetClient()
@@ -55,7 +55,7 @@ var _ = ginkgo.Describe("volume", func() {
 			}
 			err := client.Create(ctx, examplesc)
 			if err != nil {
-				logrus.Printf("Create SC failed ：%+v \n", err)
+				logrus.Printf("Create SC failed ：%+v ", err)
 				f.ExpectNoError(err)
 			}
 		})
@@ -81,7 +81,7 @@ var _ = ginkgo.Describe("volume", func() {
 			}
 			err := client.Create(ctx, examplePvc)
 			if err != nil {
-				logrus.Printf("Create PVC failed ：%+v \n", err)
+				logrus.Printf("Create PVC failed ：%+v ", err)
 				f.ExpectNoError(err)
 			}
 
@@ -92,7 +92,7 @@ var _ = ginkgo.Describe("volume", func() {
 			}
 			err = client.Get(ctx, pvcKey, pvc)
 			if err != nil {
-				logrus.Printf("Failed to find pvc ：%+v \n", err)
+				logrus.Printf("Failed to find pvc ：%+v ", err)
 				f.ExpectNoError(err)
 			}
 			gomega.Expect(pvc.Status.Phase).To(gomega.Equal(apiv1.ClaimPending))
@@ -158,7 +158,7 @@ var _ = ginkgo.Describe("volume", func() {
 			}
 			err := client.Create(ctx, exampleDeployment)
 			if err != nil {
-				logrus.Printf("%+v \n", err)
+				logrus.Printf("%+v ", err)
 				f.ExpectNoError(err)
 			}
 			time.Sleep(1 * time.Minute)
@@ -169,7 +169,7 @@ var _ = ginkgo.Describe("volume", func() {
 			}
 			err = client.Get(ctx, pvcKey, pvc)
 			if err != nil {
-				logrus.Printf("%+v \n", err)
+				logrus.Printf("%+v ", err)
 				f.ExpectNoError(err)
 			}
 			gomega.Expect(pvc.Status.Phase).To(gomega.Equal(apiv1.ClaimBound))
@@ -182,7 +182,7 @@ var _ = ginkgo.Describe("volume", func() {
 			}
 			err := client.Get(ctx, deployKey, deployment)
 			if err != nil {
-				logrus.Printf("%+v \n", err)
+				logrus.Printf("%+v ", err)
 				f.ExpectNoError(err)
 			}
 			gomega.Expect(deployment.Status.AvailableReplicas).To(gomega.Equal(int32(1)))
@@ -204,7 +204,7 @@ var _ = ginkgo.Describe("volume", func() {
 			}
 			err = client.Get(ctx, deployKey, deployment)
 			if err != nil {
-				logrus.Printf("%+v \n", err)
+				logrus.Printf("%+v ", err)
 				f.ExpectNoError(err)
 			}
 
@@ -218,7 +218,7 @@ var _ = ginkgo.Describe("volume", func() {
 			err = client.List(ctx, podlist, &listOption)
 
 			if err != nil {
-				logrus.Printf("%+v \n", err)
+				logrus.Printf("%+v ", err)
 				f.ExpectNoError(err)
 			}
 
@@ -227,12 +227,12 @@ var _ = ginkgo.Describe("volume", func() {
 				for _, container := range containers {
 					_, _, err := ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && echo it-is-a-test >test", container.Name)
 					if err != nil {
-						logrus.Printf("%+v \n", err)
+						logrus.Printf("%+v ", err)
 						f.ExpectNoError(err)
 					}
 					output, _, err := ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && cat test", container.Name)
 					if err != nil {
-						logrus.Printf("%+v \n", err)
+						logrus.Printf("%+v ", err)
 						f.ExpectNoError(err)
 					}
 					gomega.Expect(output).To(gomega.Equal("it-is-a-test"))
@@ -252,7 +252,7 @@ var _ = ginkgo.Describe("volume", func() {
 			}
 			err = client.Get(ctx, deployKey, deployment)
 			if err != nil {
-				logrus.Printf("%+v \n", err)
+				logrus.Printf("%+v ", err)
 				f.ExpectNoError(err)
 			}
 
@@ -266,7 +266,7 @@ var _ = ginkgo.Describe("volume", func() {
 			err = client.List(ctx, podlist, &listOption)
 
 			if err != nil {
-				logrus.Printf("%+v \n", err)
+				logrus.Printf("%+v ", err)
 				f.ExpectNoError(err)
 			}
 
@@ -275,12 +275,12 @@ var _ = ginkgo.Describe("volume", func() {
 				for _, container := range containers {
 					_, _, err := ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && rm -rf test", container.Name)
 					if err != nil {
-						logrus.Printf("%+v \n", err)
+						logrus.Printf("%+v ", err)
 						f.ExpectNoError(err)
 					}
 					output, _, err := ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && ls", container.Name)
 					if err != nil {
-						logrus.Printf("%+v \n", err)
+						logrus.Printf("%+v ", err)
 						f.ExpectNoError(err)
 					}
 					gomega.Expect(output).To(gomega.Equal(""))
@@ -298,12 +298,14 @@ var _ = ginkgo.Describe("volume", func() {
 			}
 			err := client.Get(ctx, deployKey, deployment)
 			if err != nil {
-				logrus.Printf("%+v \n", err)
+				logrus.Printf("%+v ", err)
 				f.ExpectNoError(err)
 			}
+			logrus.Printf("deleting test Deployment ")
+			time.Sleep(1 * time.Minute)
 			err = client.Delete(ctx, deployment)
 			if err != nil {
-				logrus.Printf("%+v \n", err)
+				logrus.Printf("%+v ", err)
 				f.ExpectNoError(err)
 			}
 

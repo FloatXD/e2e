@@ -30,7 +30,7 @@ var _ = ginkgo.Describe("test Local Disk Manager installation", func() {
 			err := client.Get(ctx, daemonsetKey, daemonset)
 			if err != nil {
 				f.ExpectNoError(err)
-				logrus.Printf("%+v \n", err)
+				logrus.Printf("%+v ", err)
 			}
 			gomega.Expect(daemonset.Status.DesiredNumberScheduled).To(gomega.Equal(daemonset.Status.NumberAvailable))
 		})

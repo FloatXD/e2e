@@ -47,7 +47,7 @@ var _ = ginkgo.Describe("volume", func() {
 			err := client.Get(context.TODO(), deploymentKey, deployment)
 			if err != nil {
 				f.ExpectNoError(err)
-				logrus.Printf("%+v \n", err)
+				logrus.Printf("%+v ", err)
 			}
 			gomega.Expect(deployment.Status.AvailableReplicas).To(gomega.Equal(int32(1)))
 		})
@@ -63,7 +63,7 @@ var _ = ginkgo.Describe("volume", func() {
 			err := client.Get(context.TODO(), deploymentKey, deployment)
 			if err != nil {
 				f.ExpectNoError(err)
-				logrus.Printf("%+v \n", err)
+				logrus.Printf("%+v ", err)
 			}
 			gomega.Expect(deployment.Status.AvailableReplicas).To(gomega.Equal(int32(1)))
 		})
